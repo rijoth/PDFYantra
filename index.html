@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDFYantra - Privacy-First PDF Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Theme Initialization Script (Prevents FOUC) -->
+    <script>
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Lato', 'sans-serif'],
+              display: ['Cinzel', 'serif'],
+              ui: ['Google Sans', 'sans-serif'],
+            },
+            colors: {
+              primary: 'var(--md-primary)',
+              onPrimary: 'var(--md-on-primary)',
+              primaryContainer: 'var(--md-primary-container)',
+              onPrimaryContainer: 'var(--md-on-primary-container)',
+              
+              secondary: 'var(--md-secondary)',
+              onSecondary: 'var(--md-on-secondary)',
+              secondaryContainer: 'var(--md-secondary-container)',
+              onSecondaryContainer: 'var(--md-on-secondary-container)',
+
+              tertiary: 'var(--md-tertiary)',
+              tertiaryContainer: 'var(--md-tertiary-container)', 
+              onTertiaryContainer: 'var(--md-on-tertiary-container)',
+
+              background: 'var(--md-background)',
+              onBackground: 'var(--md-on-background)',
+
+              surface: 'var(--md-surface)',
+              onSurface: 'var(--md-on-surface)',
+              
+              surfaceVariant: 'var(--md-surface-variant)',
+              onSurfaceVariant: 'var(--md-on-surface-variant)',
+              
+              outline: 'var(--md-outline)',
+              error: 'var(--md-error)',
+            },
+            borderRadius: {
+              'md3': '1.25rem',
+              'pill': '9999px',
+              'fab': '1rem',
+              'sm3': '0.75rem',
+            },
+            boxShadow: {
+              'elevation-1': '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
+              'elevation-3': '0px 1px 3px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.3s ease-out',
+              'scale-in': 'scaleIn 0.3s ease-out',
+              'slide-up': 'slideUp 0.4s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              scaleIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              }
+            }
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        /* Material Design 3 Light Tokens */
+        --md-primary: #0061A4;
+        --md-on-primary: #FFFFFF;
+        --md-primary-container: #D1E4FF;
+        --md-on-primary-container: #001D36;
+        
+        --md-secondary: #535F70;
+        --md-on-secondary: #FFFFFF;
+        --md-secondary-container: #D7E3F7;
+        --md-on-secondary-container: #101C2B;
+
+        --md-tertiary: #6B5778;
+        --md-tertiary-container: #F2DAFF; 
+        --md-on-tertiary-container: #251431;
+
+        --md-background: #FDFCFF;
+        --md-on-background: #1A1C1E;
+
+        --md-surface: #FDFCFF;
+        --md-on-surface: #1A1C1E;
+        
+        --md-surface-variant: #DFE2EB;
+        --md-on-surface-variant: #43474E;
+        
+        --md-outline: #73777F;
+        --md-error: #BA1A1A;
+      }
+
+      .dark {
+        /* Material Design 3 Dark Tokens */
+        --md-primary: #9ECAFF;
+        --md-on-primary: #003258;
+        --md-primary-container: #00497D;
+        --md-on-primary-container: #D1E4FF;
+
+        --md-secondary: #BBC7DB;
+        --md-on-secondary: #253140;
+        --md-secondary-container: #3B4858;
+        --md-on-secondary-container: #D7E3F7;
+
+        --md-tertiary: #D7BEE4;
+        --md-tertiary-container: #523F5F;
+        --md-on-tertiary-container: #F2DAFF;
+        
+        /* Using a very dark grey instead of pure black for better OLED smearing/eye strain */
+        --md-background: #1A1C1E;
+        --md-on-background: #E2E2E6;
+
+        --md-surface: #1A1C1E;
+        --md-on-surface: #E2E2E6;
+
+        --md-surface-variant: #43474E;
+        --md-on-surface-variant: #C3C7CF;
+
+        --md-outline: #8D9199;
+        --md-error: #FFB4AB;
+      }
+
+      body {
+        background-color: var(--md-background);
+        color: var(--md-on-background);
+        font-family: 'Lato', sans-serif;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      /* Scrollbar Styling - Adapts to variables */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--md-surface-variant); 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--md-outline); 
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* Ripple Effect */
+      .ripple {
+        position: relative;
+        overflow: hidden;
+      }
+      .ripple::after {
+        content: "";
+        display: block;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        background-image: radial-gradient(circle, currentColor 10%, transparent 10.01%);
+        background-repeat: no-repeat;
+        background-position: 50%;
+        transform: scale(10, 10);
+        opacity: 0;
+        transition: transform .5s, opacity 1s;
+      }
+      .ripple:active::after {
+        transform: scale(0, 0);
+        opacity: 0.1;
+        transition: 0s;
+      }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "zustand": "https://esm.sh/zustand@4.5.2?deps=react@18.2.0",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@3.11.174",
+    "pdf-lib": "https://esm.sh/pdf-lib@1.17.1",
+    "jszip": "https://esm.sh/jszip@3.10.1",
+    "mammoth": "https://esm.sh/mammoth@1.6.0",
+    "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@16.5.0?deps=react@18.2.0,react-dom@18.2.0",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
