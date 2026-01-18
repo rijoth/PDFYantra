@@ -250,7 +250,7 @@ const OrganizerTool: React.FC = () => {
     }
 
     return (
-        <div className="relative h-full flex flex-col">
+        <div className="relative min-h-[500px] flex flex-col">
             {/* Modals & Preview */}
             {showFileManager && <FileManager onClose={() => setShowFileManager(false)} />}
             <PagePreview />

@@ -17,7 +17,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onToolChange
 }) => {
   return (
-    <div className="h-screen flex overflow-hidden bg-background font-sans text-onSurfaceVariant selection:bg-primaryContainer selection:text-onPrimaryContainer">
+    <div className="min-h-screen md:h-screen flex md:overflow-hidden bg-background font-sans text-onSurfaceVariant selection:bg-primaryContainer selection:text-onPrimaryContainer">
       {/* Navigation (Rail on Desktop, Bottom Bar on Mobile) */}
       <Navigation activeTool={activeTool} onToolChange={onToolChange} />
 
@@ -25,8 +25,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="flex-1 flex flex-col min-w-0 md:ml-[80px] mb-[80px] md:mb-0 transition-all duration-300">
         <TopAppBar />
 
-        <main className="flex-grow flex flex-col p-4 md:px-8 md:pb-0 overflow-y-auto">
-          <div className="max-w-7xl mx-auto w-full h-full flex flex-col animate-fade-in flex-grow">
+        <main className="flex-grow flex flex-col p-4 md:px-8 md:pb-0 md:overflow-y-auto">
+          <div className="max-w-7xl mx-auto w-full flex flex-col animate-fade-in flex-grow">
             {children}
           </div>
           <Footer />

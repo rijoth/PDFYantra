@@ -223,7 +223,7 @@ const ConvertTool: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-5xl mx-auto">
+        <div className="flex flex-col min-h-full max-w-5xl mx-auto">
 
             {/* Tab Navigation */}
             <div className="flex gap-4 border-b border-surfaceVariant/50 mb-6">
