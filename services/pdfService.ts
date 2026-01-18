@@ -18,7 +18,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pd
  */
 export const generateThumbnails = async (file: UploadedFile): Promise<PDFPage[]> => {
   const fileBuffer = await file.file.arrayBuffer();
-  
+
   // Load using pdf.js for rendering
   const loadingTask = pdfjs.getDocument({ data: fileBuffer });
   const pdf = await loadingTask.promise;
@@ -30,10 +30,10 @@ export const generateThumbnails = async (file: UploadedFile): Promise<PDFPage[]>
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const viewport = page.getViewport({ scale });
-    
+
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    
+
     if (!context) throw new Error("Could not create canvas context");
 
     canvas.height = viewport.height;
@@ -49,10 +49,10 @@ export const generateThumbnails = async (file: UploadedFile): Promise<PDFPage[]>
       fileId: file.id,
       pageIndex: i - 1, // 0-based for pdf-lib
       pageNumber: i,    // 1-based for display
-      thumbnailUrl: canvas.toDataURL('image/jpeg', 0.7), 
+      thumbnailUrl: canvas.toDataURL('image/jpeg', 0.7),
       rotation: 0,
     });
-    
+
     // Cleanup to free memory
     context.clearRect(0, 0, canvas.width, canvas.height);
   }
@@ -75,12 +75,12 @@ export const renderPageHighRes = async (
 
   // Calculate viewport with rotation
   // We render at scale 2.0 for crispness on high DPI screens, but cap dimension to prevent canvas errors
-  const scale = 2.0; 
+  const scale = 2.0;
   const viewport = page.getViewport({ scale, rotation });
 
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
-  
+
   if (!context) throw new Error("Canvas context failed");
 
   canvas.height = viewport.height;
@@ -93,8 +93,8 @@ export const renderPageHighRes = async (
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
-        if (blob) resolve(URL.createObjectURL(blob));
-        else resolve('');
+      if (blob) resolve(URL.createObjectURL(blob));
+      else resolve('');
     }, 'image/jpeg', 0.85);
   });
 };
@@ -103,7 +103,7 @@ export const renderPageHighRes = async (
  * Merges pages based on the provided order and rotation settings.
  */
 export const mergePages = async (
-  pages: PDFPage[], 
+  pages: PDFPage[],
   fileMap: Map<string, UploadedFile>
 ): Promise<Uint8Array> => {
   if (pages.length === 0) {
@@ -112,7 +112,7 @@ export const mergePages = async (
 
   try {
     const mergedPdf = await PDFDocument.create();
-    
+
     // Cache loaded source documents to avoid parsing multiple times
     const loadedDocs = new Map<string, PDFDocument>();
 
@@ -123,7 +123,7 @@ export const mergePages = async (
       }
 
       let sourceDoc = loadedDocs.get(page.fileId);
-      
+
       if (!sourceDoc) {
         const fileBuffer = await file.file.arrayBuffer();
         sourceDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
@@ -132,7 +132,7 @@ export const mergePages = async (
 
       // Copy the specific page
       const [copiedPage] = await mergedPdf.copyPages(sourceDoc, [page.pageIndex]);
-      
+
       // Apply rotation if needed
       if (page.rotation !== 0) {
         const currentRotation = copiedPage.getRotation().angle;
@@ -159,7 +159,7 @@ export const splitWorkspace = async (
   fileMap: Map<string, UploadedFile>,
   config: SplitConfig
 ): Promise<{ blob: Blob; filename: string; isZip: boolean }> => {
-  
+
   if (pages.length === 0) throw new Error("Workspace is empty.");
 
   const totalPages = pages.length;
@@ -186,7 +186,7 @@ export const splitWorkspace = async (
     // Convert them to indices in our current `pages` array
     const indices = parsePageRange(config.rangeInput, totalPages);
     if (indices.length === 0) throw new Error("Invalid page range specified.");
-    ranges.push(indices); 
+    ranges.push(indices);
   }
 
   // 2. Generate PDF(s)
@@ -205,7 +205,7 @@ export const splitWorkspace = async (
     for (const index of pageIndices) {
       const pageMeta = pages[index];
       const file = fileMap.get(pageMeta.fileId);
-      
+
       if (!file) continue;
 
       let sourceDoc = loadedDocs.get(pageMeta.fileId);
@@ -216,19 +216,19 @@ export const splitWorkspace = async (
       }
 
       const [copiedPage] = await subDoc.copyPages(sourceDoc, [pageMeta.pageIndex]);
-      
+
       // Apply rotation if needed (persisting workspace edits)
       if (pageMeta.rotation !== 0) {
         const currentRotation = copiedPage.getRotation().angle;
         copiedPage.setRotation(degrees((currentRotation + pageMeta.rotation) % 360));
       }
-      
+
       subDoc.addPage(copiedPage);
     }
-    
+
     const pdfBytes = await subDoc.save();
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    
+    const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+
     // Naming convention
     let suffix = '';
     if (config.mode === 'extract_all') {
@@ -262,7 +262,7 @@ export const splitWorkspace = async (
     resultBlobs.forEach(item => {
       zip.file(item.name, item.blob);
     });
-    
+
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     return {
       blob: zipBlob,
@@ -292,10 +292,10 @@ export const compressPdfFile = async (
   for (let i = 1; i <= numPages; i++) {
     onProgress(i, numPages);
     const page = await doc.getPage(i);
-    
+
     // Determine viewport
     const viewport = page.getViewport({ scale });
-    
+
     // Render to canvas
     const canvas = document.createElement('canvas');
     canvas.width = viewport.width;
@@ -308,24 +308,24 @@ export const compressPdfFile = async (
     // Convert to image
     const imgData = canvas.toDataURL('image/jpeg', quality);
     const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
-    
+
     // Embed in new PDF
     const jpgImage = await newPdf.embedJpg(imgBytes);
     const newPage = newPdf.addPage([viewport.width, viewport.height]);
     newPage.drawImage(jpgImage, {
-        x: 0,
-        y: 0,
-        width: viewport.width,
-        height: viewport.height
+      x: 0,
+      y: 0,
+      width: viewport.width,
+      height: viewport.height
     });
-    
+
     // Cleanup
     canvas.width = 0;
     canvas.height = 0;
   }
 
   const pdfBytes = await newPdf.save();
-  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+  const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
   const filename = file.name.replace(/\.pdf$/i, '_compressed.pdf');
 
   return { blob, filename };

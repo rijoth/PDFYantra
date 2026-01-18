@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO & Metadata -->
+    <title>PDFYantra - Privacy First PDF Tools</title>
+    <meta name="title" content="PDFYantra - Privacy First PDF Tools" />
+    <meta name="description" content="Secure, client-side PDF tools running 100% in your browser. Merge, split, compress, and convert PDFs locally without uploading files. Privacy-first." />
+    <meta name="keywords" content="pdf merger, pdf splitter, compress pdf, convert pdf to jpg, client-side pdf, privacy first pdf tools, local pdf editor" />
+    <meta name="author" content="PDFYantra" />
+    <meta name="theme-color" content="#6750A4" />
+    <link rel="canonical" href="https://pdfyantra.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pdfyantra.app/" />
+    <meta property="og:title" content="PDFYantra - Secure Browser-Based PDF Tools" />
+    <meta property="og:description" content="Merge, split, compress, and convert PDFs 100% offline in your browser. No servers involved." />
+    <meta property="og:image" content="https://pdfyantra.app/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://pdfyantra.app/" />
+    <meta property="twitter:title" content="PDFYantra - Secure Browser-Based PDF Tools" />
+    <meta property="twitter:description" content="Merge, split, compress, and convert PDFs 100% offline in your browser. No servers involved." />
+    <meta property="twitter:image" content="https://pdfyantra.app/og-image.jpg" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+      :root {
+        /* Light Theme Tokens (Material 3) */
+        --color-primary: 103 80 164;          /* #6750A4 */
+        --color-on-primary: 255 255 255;      /* #FFFFFF */
+        --color-primary-container: 234 221 255; /* #EADDFF */
+        --color-on-primary-container: 33 0 93;  /* #21005D */
+        
+        --color-secondary: 98 91 113;         /* #625B71 */
+        --color-on-secondary: 255 255 255;    /* #FFFFFF */
+        --color-secondary-container: 232 222 248; /* #E8DEF8 */
+        --color-on-secondary-container: 29 25 43; /* #1D192B */
+
+        --color-tertiary: 125 82 96;          /* #7D5260 */
+        --color-tertiary-container: 255 216 228; /* #FFD8E4 */
+        --color-on-tertiary-container: 49 17 29; /* #31111D */
+
+        --color-background: 255 251 254;      /* #FFFBFE */
+        --color-on-background: 28 27 31;      /* #1C1B1F */
+
+        --color-surface: 255 251 254;         /* #FFFBFE */
+        --color-on-surface: 28 27 31;         /* #1C1B1F */
+        
+        --color-surface-variant: 231 224 236; /* #E7E0EC */
+        --color-on-surface-variant: 73 69 79; /* #49454F */
+        
+        --color-outline: 121 116 126;         /* #79747E */
+        --color-error: 179 38 30;             /* #B3261E */
+      }
+
+      .dark {
+        /* Dark Theme Tokens (Material 3) */
+        --color-primary: 207 188 255;         /* #CFBCFF */
+        --color-on-primary: 56 30 114;        /* #381E72 */
+        --color-primary-container: 79 55 138; /* #4F378A */
+        --color-on-primary-container: 233 221 255; /* #E9DDFF */
+        
+        --color-secondary: 203 194 219;       /* #CBC2DB */
+        --color-on-secondary: 51 45 65;       /* #332D41 */
+        --color-secondary-container: 74 68 88; /* #4A4458 */
+        --color-on-secondary-container: 232 222 248; /* #E8DEF8 */
+
+        --color-tertiary: 239 184 200;        /* #EFB8C8 */
+        --color-tertiary-container: 99 59 72; /* #633B48 */
+        --color-on-tertiary-container: 255 217 227; /* #FFD9E3 */
+
+        --color-background: 20 18 24;         /* #141218 */
+        --color-on-background: 230 225 229;   /* #E6E1E5 */
+
+        --color-surface: 20 18 24;            /* #141218 */
+        --color-on-surface: 230 225 229;      /* #E6E1E5 */
+        
+        --color-surface-variant: 73 69 79;    /* #49454F */
+        --color-on-surface-variant: 202 196 208; /* #CAC4D0 */
+        
+        --color-outline: 147 143 153;         /* #938F99 */
+        --color-error: 255 180 171;           /* #FFB4AB */
+      }
+    </style>
+
+    <script>
+      // Initialize Theme based on system preference or saved selection
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    </script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Lato', 'sans-serif'],
+              display: ['Cinzel', 'serif'],
+              ui: ['Google Sans', 'sans-serif'],
+            },
+            colors: {
+              primary: 'rgb(var(--color-primary) / <alpha-value>)',
+              onPrimary: 'rgb(var(--color-on-primary) / <alpha-value>)',
+              primaryContainer: 'rgb(var(--color-primary-container) / <alpha-value>)',
+              onPrimaryContainer: 'rgb(var(--color-on-primary-container) / <alpha-value>)',
+              
+              secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+              onSecondary: 'rgb(var(--color-on-secondary) / <alpha-value>)',
+              secondaryContainer: 'rgb(var(--color-secondary-container) / <alpha-value>)',
+              onSecondaryContainer: 'rgb(var(--color-on-secondary-container) / <alpha-value>)',
+
+              tertiary: 'rgb(var(--color-tertiary) / <alpha-value>)',
+              tertiaryContainer: 'rgb(var(--color-tertiary-container) / <alpha-value>)', 
+              onTertiaryContainer: 'rgb(var(--color-on-tertiary-container) / <alpha-value>)',
+
+              background: 'rgb(var(--color-background) / <alpha-value>)',
+              onBackground: 'rgb(var(--color-on-background) / <alpha-value>)',
+
+              surface: 'rgb(var(--color-surface) / <alpha-value>)',
+              onSurface: 'rgb(var(--color-on-surface) / <alpha-value>)',
+              
+              surfaceVariant: 'rgb(var(--color-surface-variant) / <alpha-value>)',
+              onSurfaceVariant: 'rgb(var(--color-on-surface-variant) / <alpha-value>)',
+              
+              outline: 'rgb(var(--color-outline) / <alpha-value>)',
+              error: 'rgb(var(--color-error) / <alpha-value>)',
+            },
+            borderRadius: {
+              'md3': '1.25rem',
+              'pill': '9999px',
+              'fab': '1rem',
+              'sm3': '0.75rem',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'scale-in': 'scaleIn 0.3s ease-out',
+              'slide-up': 'slideUp 0.4s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              scaleIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            }
+          },
+        },
+      };
+    </script>
+
+  <link rel="stylesheet" href="/index.css">
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "zustand": "https://esm.sh/zustand@4.5.2?deps=react@18.2.0",
+    "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@16.5.0?deps=react@18.2.0,react-dom@18.2.0",
+    "@google/genai": "https://esm.sh/@google/genai@0.0.2",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@3.11.174",
+    "jszip": "https://esm.sh/jszip@^3.10.1",
+    "mammoth": "https://esm.sh/mammoth@^1.11.0",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "pdf-lib": "https://esm.sh/pdf-lib@^1.17.1",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/assets/index-DPM-WJVT.js"></script>
+</head>
+  <body class="bg-background text-onBackground antialiased overflow-hidden">
+    <div id="root"></div>
+</body>
+</html>
