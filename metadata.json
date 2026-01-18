@@ -1,5 +1,5 @@
 {
   "name": "PDFYantra",
-  "description": "A privacy-first, client-side PDF toolkit for merging, splitting, and organizing documents in the browser.",
+  "description": "Privacy-first, client-side PDF manipulation tools.",
   "requestFramePermissions": []
 }

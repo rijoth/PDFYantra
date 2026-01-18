@@ -3,19 +3,102 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDFYantra - Privacy-First PDF Tools</title>
+    
+    <!-- SEO & Metadata -->
+    <title>PDFYantra - Privacy First PDF Tools</title>
+    <meta name="title" content="PDFYantra - Privacy First PDF Tools" />
+    <meta name="description" content="Secure, client-side PDF tools running 100% in your browser. Merge, split, compress, and convert PDFs locally without uploading files. Privacy-first." />
+    <meta name="keywords" content="pdf merger, pdf splitter, compress pdf, convert pdf to jpg, client-side pdf, privacy first pdf tools, local pdf editor" />
+    <meta name="author" content="PDFYantra" />
+    <meta name="theme-color" content="#6750A4" />
+    <link rel="canonical" href="https://pdfyantra.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pdfyantra.app/" />
+    <meta property="og:title" content="PDFYantra - Secure Browser-Based PDF Tools" />
+    <meta property="og:description" content="Merge, split, compress, and convert PDFs 100% offline in your browser. No servers involved." />
+    <meta property="og:image" content="https://pdfyantra.app/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://pdfyantra.app/" />
+    <meta property="twitter:title" content="PDFYantra - Secure Browser-Based PDF Tools" />
+    <meta property="twitter:description" content="Merge, split, compress, and convert PDFs 100% offline in your browser. No servers involved." />
+    <meta property="twitter:image" content="https://pdfyantra.app/og-image.jpg" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <!-- Theme Initialization Script (Prevents FOUC) -->
+    <style>
+      :root {
+        /* Light Theme Tokens (Material 3) */
+        --color-primary: 103 80 164;          /* #6750A4 */
+        --color-on-primary: 255 255 255;      /* #FFFFFF */
+        --color-primary-container: 234 221 255; /* #EADDFF */
+        --color-on-primary-container: 33 0 93;  /* #21005D */
+        
+        --color-secondary: 98 91 113;         /* #625B71 */
+        --color-on-secondary: 255 255 255;    /* #FFFFFF */
+        --color-secondary-container: 232 222 248; /* #E8DEF8 */
+        --color-on-secondary-container: 29 25 43; /* #1D192B */
+
+        --color-tertiary: 125 82 96;          /* #7D5260 */
+        --color-tertiary-container: 255 216 228; /* #FFD8E4 */
+        --color-on-tertiary-container: 49 17 29; /* #31111D */
+
+        --color-background: 255 251 254;      /* #FFFBFE */
+        --color-on-background: 28 27 31;      /* #1C1B1F */
+
+        --color-surface: 255 251 254;         /* #FFFBFE */
+        --color-on-surface: 28 27 31;         /* #1C1B1F */
+        
+        --color-surface-variant: 231 224 236; /* #E7E0EC */
+        --color-on-surface-variant: 73 69 79; /* #49454F */
+        
+        --color-outline: 121 116 126;         /* #79747E */
+        --color-error: 179 38 30;             /* #B3261E */
+      }
+
+      .dark {
+        /* Dark Theme Tokens (Material 3) */
+        --color-primary: 207 188 255;         /* #CFBCFF */
+        --color-on-primary: 56 30 114;        /* #381E72 */
+        --color-primary-container: 79 55 138; /* #4F378A */
+        --color-on-primary-container: 233 221 255; /* #E9DDFF */
+        
+        --color-secondary: 203 194 219;       /* #CBC2DB */
+        --color-on-secondary: 51 45 65;       /* #332D41 */
+        --color-secondary-container: 74 68 88; /* #4A4458 */
+        --color-on-secondary-container: 232 222 248; /* #E8DEF8 */
+
+        --color-tertiary: 239 184 200;        /* #EFB8C8 */
+        --color-tertiary-container: 99 59 72; /* #633B48 */
+        --color-on-tertiary-container: 255 217 227; /* #FFD9E3 */
+
+        --color-background: 20 18 24;         /* #141218 */
+        --color-on-background: 230 225 229;   /* #E6E1E5 */
+
+        --color-surface: 20 18 24;            /* #141218 */
+        --color-on-surface: 230 225 229;      /* #E6E1E5 */
+        
+        --color-surface-variant: 73 69 79;    /* #49454F */
+        --color-on-surface-variant: 202 196 208; /* #CAC4D0 */
+        
+        --color-outline: 147 143 153;         /* #938F99 */
+        --color-error: 255 180 171;           /* #FFB4AB */
+      }
+    </style>
+
     <script>
+      // Initialize Theme based on system preference or saved selection
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
+        document.documentElement.classList.add('dark')
       } else {
-        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.remove('dark')
       }
     </script>
 
@@ -30,31 +113,31 @@
               ui: ['Google Sans', 'sans-serif'],
             },
             colors: {
-              primary: 'var(--md-primary)',
-              onPrimary: 'var(--md-on-primary)',
-              primaryContainer: 'var(--md-primary-container)',
-              onPrimaryContainer: 'var(--md-on-primary-container)',
+              primary: 'rgb(var(--color-primary) / <alpha-value>)',
+              onPrimary: 'rgb(var(--color-on-primary) / <alpha-value>)',
+              primaryContainer: 'rgb(var(--color-primary-container) / <alpha-value>)',
+              onPrimaryContainer: 'rgb(var(--color-on-primary-container) / <alpha-value>)',
               
-              secondary: 'var(--md-secondary)',
-              onSecondary: 'var(--md-on-secondary)',
-              secondaryContainer: 'var(--md-secondary-container)',
-              onSecondaryContainer: 'var(--md-on-secondary-container)',
+              secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+              onSecondary: 'rgb(var(--color-on-secondary) / <alpha-value>)',
+              secondaryContainer: 'rgb(var(--color-secondary-container) / <alpha-value>)',
+              onSecondaryContainer: 'rgb(var(--color-on-secondary-container) / <alpha-value>)',
 
-              tertiary: 'var(--md-tertiary)',
-              tertiaryContainer: 'var(--md-tertiary-container)', 
-              onTertiaryContainer: 'var(--md-on-tertiary-container)',
+              tertiary: 'rgb(var(--color-tertiary) / <alpha-value>)',
+              tertiaryContainer: 'rgb(var(--color-tertiary-container) / <alpha-value>)', 
+              onTertiaryContainer: 'rgb(var(--color-on-tertiary-container) / <alpha-value>)',
 
-              background: 'var(--md-background)',
-              onBackground: 'var(--md-on-background)',
+              background: 'rgb(var(--color-background) / <alpha-value>)',
+              onBackground: 'rgb(var(--color-on-background) / <alpha-value>)',
 
-              surface: 'var(--md-surface)',
-              onSurface: 'var(--md-on-surface)',
+              surface: 'rgb(var(--color-surface) / <alpha-value>)',
+              onSurface: 'rgb(var(--color-on-surface) / <alpha-value>)',
               
-              surfaceVariant: 'var(--md-surface-variant)',
-              onSurfaceVariant: 'var(--md-on-surface-variant)',
+              surfaceVariant: 'rgb(var(--color-surface-variant) / <alpha-value>)',
+              onSurfaceVariant: 'rgb(var(--color-on-surface-variant) / <alpha-value>)',
               
-              outline: 'var(--md-outline)',
-              error: 'var(--md-error)',
+              outline: 'rgb(var(--color-outline) / <alpha-value>)',
+              error: 'rgb(var(--color-error) / <alpha-value>)',
             },
             borderRadius: {
               'md3': '1.25rem',
@@ -62,12 +145,8 @@
               'fab': '1rem',
               'sm3': '0.75rem',
             },
-            boxShadow: {
-              'elevation-1': '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
-              'elevation-3': '0px 1px 3px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15)',
-            },
             animation: {
-              'fade-in': 'fadeIn 0.3s ease-out',
+              'fade-in': 'fadeIn 0.5s ease-out',
               'scale-in': 'scaleIn 0.3s ease-out',
               'slide-up': 'slideUp 0.4s ease-out',
             },
@@ -81,132 +160,14 @@
                 '100%': { opacity: '1', transform: 'scale(1)' },
               },
               slideUp: {
-                '0%': { transform: 'translateY(20px)', opacity: '0' },
-                '100%': { transform: 'translateY(0)', opacity: '1' },
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
               }
             }
           },
         },
       };
     </script>
-    <style>
-      :root {
-        /* Material Design 3 Light Tokens */
-        --md-primary: #0061A4;
-        --md-on-primary: #FFFFFF;
-        --md-primary-container: #D1E4FF;
-        --md-on-primary-container: #001D36;
-        
-        --md-secondary: #535F70;
-        --md-on-secondary: #FFFFFF;
-        --md-secondary-container: #D7E3F7;
-        --md-on-secondary-container: #101C2B;
-
-        --md-tertiary: #6B5778;
-        --md-tertiary-container: #F2DAFF; 
-        --md-on-tertiary-container: #251431;
-
-        --md-background: #FDFCFF;
-        --md-on-background: #1A1C1E;
-
-        --md-surface: #FDFCFF;
-        --md-on-surface: #1A1C1E;
-        
-        --md-surface-variant: #DFE2EB;
-        --md-on-surface-variant: #43474E;
-        
-        --md-outline: #73777F;
-        --md-error: #BA1A1A;
-      }
-
-      .dark {
-        /* Material Design 3 Dark Tokens */
-        --md-primary: #9ECAFF;
-        --md-on-primary: #003258;
-        --md-primary-container: #00497D;
-        --md-on-primary-container: #D1E4FF;
-
-        --md-secondary: #BBC7DB;
-        --md-on-secondary: #253140;
-        --md-secondary-container: #3B4858;
-        --md-on-secondary-container: #D7E3F7;
-
-        --md-tertiary: #D7BEE4;
-        --md-tertiary-container: #523F5F;
-        --md-on-tertiary-container: #F2DAFF;
-        
-        /* Using a very dark grey instead of pure black for better OLED smearing/eye strain */
-        --md-background: #1A1C1E;
-        --md-on-background: #E2E2E6;
-
-        --md-surface: #1A1C1E;
-        --md-on-surface: #E2E2E6;
-
-        --md-surface-variant: #43474E;
-        --md-on-surface-variant: #C3C7CF;
-
-        --md-outline: #8D9199;
-        --md-error: #FFB4AB;
-      }
-
-      body {
-        background-color: var(--md-background);
-        color: var(--md-on-background);
-        font-family: 'Lato', sans-serif;
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
-      
-      /* Scrollbar Styling - Adapts to variables */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--md-surface-variant); 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--md-outline); 
-      }
-      
-      .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-      }
-      .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-      }
-
-      /* Ripple Effect */
-      .ripple {
-        position: relative;
-        overflow: hidden;
-      }
-      .ripple::after {
-        content: "";
-        display: block;
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        background-image: radial-gradient(circle, currentColor 10%, transparent 10.01%);
-        background-repeat: no-repeat;
-        background-position: 50%;
-        transform: scale(10, 10);
-        opacity: 0;
-        transition: transform .5s, opacity 1s;
-      }
-      .ripple:active::after {
-        transform: scale(0, 0);
-        opacity: 0.1;
-        transition: 0s;
-      }
-    </style>
     <script type="importmap">
 {
   "imports": {
@@ -215,13 +176,14 @@
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
     "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
     "zustand": "https://esm.sh/zustand@4.5.2?deps=react@18.2.0",
-    "pdfjs-dist": "https://esm.sh/pdfjs-dist@3.11.174",
-    "pdf-lib": "https://esm.sh/pdf-lib@1.17.1",
-    "jszip": "https://esm.sh/jszip@3.10.1",
-    "mammoth": "https://esm.sh/mammoth@1.6.0",
     "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@16.5.0?deps=react@18.2.0,react-dom@18.2.0",
-    "xlsx": "https://esm.sh/xlsx@0.18.5",
-    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+    "@google/genai": "https://esm.sh/@google/genai@0.1.0",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@3.11.174",
+    "jszip": "https://esm.sh/jszip@^3.10.1",
+    "mammoth": "https://esm.sh/mammoth@^1.11.0",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "pdf-lib": "https://esm.sh/pdf-lib@^1.17.1",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
@@ -229,7 +191,7 @@
 </script>
   <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
+  <body class="bg-background text-onBackground antialiased overflow-hidden">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

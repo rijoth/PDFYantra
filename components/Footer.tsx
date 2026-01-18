@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const Footer: React.FC = () => {
@@ -23,7 +22,6 @@ const Footer: React.FC = () => {
             aria-label="View Source on GitHub"
           >
             <i className="fa-brands fa-github text-lg group-hover:scale-110 transition-transform duration-200"></i>
-            <span>Source Code</span>
           </a>
         </div>
 

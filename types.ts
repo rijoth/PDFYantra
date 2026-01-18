@@ -1,4 +1,5 @@
 
+
 // PDF Application Types
 
 export interface UploadedFile {
@@ -56,4 +57,19 @@ export interface CompressionResult {
   newSize: number;
   originalSize: number;
   filename: string;
+}
+
+export interface SearchMatch {
+  pageId: string;
+  pageNumber: number; // Visual page number (1-based)
+  text: string; // The full text of the page (or a large chunk)
+  snippet: string; // Context around the match
+  matchIndex: number; // Index in the full text
+}
+
+export interface SearchResult {
+  fileId: string;
+  fileName: string;
+  fileColor: string;
+  matches: SearchMatch[];
 }

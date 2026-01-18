@@ -151,7 +151,7 @@ const CompressTool: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                  {Array.from(results.values()).map(res => {
+                  {Array.from(results.values()).map((res: CompressionResult) => {
                       const savings = res.originalSize - res.newSize;
                       const pct = Math.round((savings / res.originalSize) * 100);
                       const isSmaller = savings > 0;

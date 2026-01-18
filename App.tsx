@@ -8,9 +8,22 @@ import ConvertTool from './components/ConvertTool';
 import CompressTool from './components/CompressTool';
 import { usePdfStore } from './store/usePdfStore';
 import { loadSession } from './services/storageService';
+import { AppStatus } from './types';
 
 const App: React.FC = () => {
-  const { activeTool, setActiveTool, restoreSession, setInitialized, isInitialized } = usePdfStore();
+  const { activeTool, setActiveTool, restoreSession, setInitialized, isInitialized, status } = usePdfStore();
+
+  // SEO: Update document title based on active tool
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      home: 'PDFYantra - Privacy-First Local PDF Tools',
+      merge: 'Merge & Organize PDFs - PDFYantra',
+      split: 'Split PDF Documents - PDFYantra',
+      convert: 'Convert PDF to Images & Text - PDFYantra',
+      compress: 'Compress PDF File Size - PDFYantra'
+    };
+    document.title = titles[activeTool] || titles.home;
+  }, [activeTool]);
 
   useEffect(() => {
     const init = async () => {
@@ -24,24 +37,27 @@ const App: React.FC = () => {
   }, [restoreSession, setInitialized]);
 
   if (!isInitialized) {
-    return (
-      <div className="fixed inset-0 bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-onSurfaceVariant font-medium animate-pulse">Initializing Engine...</p>
-        </div>
-      </div>
-    );
+     return (
+         <div className="h-screen w-full flex items-center justify-center bg-background text-primary">
+             <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+         </div>
+     );
   }
 
   const renderContent = () => {
     switch (activeTool) {
-      case 'home': return <LandingPage onNavigate={setActiveTool} />;
-      case 'merge': return <OrganizerTool />;
-      case 'split': return <SplitTool onSplit={() => {}} isProcessing={false} />;
-      case 'convert': return <ConvertTool />;
-      case 'compress': return <CompressTool />;
-      default: return <LandingPage onNavigate={setActiveTool} />;
+      case 'home':
+        return <LandingPage onNavigate={setActiveTool} />;
+      case 'merge':
+        return <OrganizerTool />;
+      case 'split':
+        return <SplitTool onSplit={() => {}} isProcessing={status === AppStatus.PROCESSING} />;
+      case 'convert':
+        return <ConvertTool />;
+      case 'compress':
+        return <CompressTool />;
+      default:
+        return <LandingPage onNavigate={setActiveTool} />;
     }
   };
 

@@ -1,4 +1,5 @@
 
+
 import { PDFDocument, degrees } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
@@ -6,10 +7,11 @@ import { UploadedFile, PDFPage, SplitConfig } from '../types';
 import { parsePageRange } from '../utils/pdfUtils';
 
 // Configure PDF.js worker
-const pdfjs = (pdfjsLib as any).default || pdfjsLib;
+export const pdfjs = (pdfjsLib as any).default || pdfjsLib;
 
 // Use cdnjs for the worker to ensure a classic script compatible with standard Worker instantiation
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+// We use the dynamic version from the imported library to match the worker exactly.
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 /**
  * Generates thumbnails for all pages in a PDF file.

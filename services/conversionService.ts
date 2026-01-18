@@ -1,15 +1,12 @@
 
+
 import { PDFDocument, rgb } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { UploadedFile, PDFPage, ConvertFormat } from '../types';
-
-// Configure PDF.js worker (Shared configuration with pdfService)
-const pdfjs = (pdfjsLib as any).default || pdfjsLib;
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+import { pdfjs } from './pdfService';
 
 /**
  * Helper to create a hidden container for DOM rendering

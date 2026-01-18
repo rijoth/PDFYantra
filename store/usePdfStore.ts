@@ -1,8 +1,10 @@
 
+
 import { create } from 'zustand';
-import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile } from '../types';
+import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile, SearchResult } from '../types';
 import { clearSession } from '../services/storageService';
 import { generateThumbnails } from '../services/pdfService';
+import { searchWorkspace, clearSearchCache } from '../services/searchService';
 
 interface PdfState {
   // --- Workspace Data ---
@@ -18,6 +20,12 @@ interface PdfState {
   isInitialized: boolean;
   previewPageId: string | null;
   
+  // --- Search State ---
+  searchQuery: string;
+  searchResults: SearchResult[];
+  isSearching: boolean;
+  searchProgress: number;
+
   // --- Actions ---
   setActiveTool: (tool: ToolType) => void;
   setInitialized: (val: boolean) => void;
@@ -50,6 +58,10 @@ interface PdfState {
   
   // Preview
   setPreviewPageId: (id: string | null) => void;
+
+  // Search
+  performSearch: (query: string) => Promise<void>;
+  clearSearch: () => void;
 }
 
 export const usePdfStore = create<PdfState>((set, get) => ({
@@ -64,13 +76,21 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   isInitialized: false,
   previewPageId: null,
 
+  // Search Initial State
+  searchQuery: '',
+  searchResults: [],
+  isSearching: false,
+  searchProgress: 0,
+
   // --- Actions ---
 
   setActiveTool: (tool) => set({ 
     activeTool: tool,
     status: AppStatus.IDLE,
     errorMessage: null,
-    downloadInfo: null
+    downloadInfo: null,
+    // Clear search results when switching tools if desired, or keep them. 
+    // Keeping them allows switching back to results.
   }),
 
   setInitialized: (val) => set({ isInitialized: val }),
@@ -116,6 +136,9 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       // Note: This is an async operation inside a store action. 
       // Ideally, thumbnails generation should happen in a service, but here we need to sync state.
       const newPages = await generateThumbnails(updatedUploadedFile);
+      
+      // Clear search cache because content changed
+      clearSearchCache();
 
       // 3. Update Store
       set((currentState) => {
@@ -194,6 +217,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   clearWorkspace: () => {
     // Also clear the persistent storage
     clearSession();
+    clearSearchCache();
     
     set({
       files: new Map(),
@@ -202,7 +226,9 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       status: AppStatus.IDLE,
       errorMessage: null,
       downloadInfo: null,
-      previewPageId: null
+      previewPageId: null,
+      searchQuery: '',
+      searchResults: []
     });
   },
 
@@ -278,5 +304,34 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     downloadInfo: null
   }),
 
-  setPreviewPageId: (id) => set({ previewPageId: id })
+  setPreviewPageId: (id) => set({ previewPageId: id }),
+
+  // --- Search Logic ---
+  
+  performSearch: async (query: string) => {
+    set({ searchQuery: query });
+    
+    if (!query.trim()) {
+      set({ searchResults: [], isSearching: false, searchProgress: 0 });
+      return;
+    }
+
+    set({ isSearching: true, searchProgress: 0 });
+    const { files, pages } = get();
+
+    try {
+      const results = await searchWorkspace(
+        query, 
+        files, 
+        pages,
+        (curr, total) => set({ searchProgress: Math.round((curr/total) * 100) })
+      );
+      set({ searchResults: results, isSearching: false });
+    } catch (err) {
+      console.error(err);
+      set({ isSearching: false, errorMessage: "Search failed" });
+    }
+  },
+
+  clearSearch: () => set({ searchQuery: '', searchResults: [], searchProgress: 0 })
 }));
