@@ -19,6 +19,7 @@ interface PdfState {
   downloadInfo: ProcessingResult | null;
   isInitialized: boolean;
   previewPageId: string | null;
+  hasRecoveredSession: boolean;
 
   // --- Search State ---
   searchQuery: string;
@@ -33,7 +34,9 @@ interface PdfState {
   // --- Actions ---
   setActiveTool: (tool: ToolType) => void;
   setInitialized: (val: boolean) => void;
-  restoreSession: (files: Map<string, UploadedFile>, pages: PDFPage[]) => void;
+  restoreSession: (files: Map<string, UploadedFile>, pages: PDFPage[], activeTool: ToolType) => void;
+  setHasRecoveredSession: (val: boolean) => void;
+  dismissRecoveryIndication: () => void;
 
   // File & Page Management
   addFilesAndPages: (newFiles: UploadedFile[], newPages: PDFPage[]) => void;
@@ -83,6 +86,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   downloadInfo: null,
   isInitialized: false,
   previewPageId: null,
+  hasRecoveredSession: false,
 
   // Search Initial State
   searchQuery: '',
@@ -107,12 +111,16 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   setInitialized: (val) => set({ isInitialized: val }),
 
-  restoreSession: (files, pages) => set({
+  restoreSession: (files, pages, activeTool) => set({
     files,
     pages,
     status: AppStatus.IDLE,
-    activeTool: pages.length > 0 ? 'merge' : 'home'
+    activeTool: activeTool || (pages.length > 0 ? 'merge' : 'home')
   }),
+
+  setHasRecoveredSession: (val) => set({ hasRecoveredSession: val }),
+
+  dismissRecoveryIndication: () => set({ hasRecoveredSession: false }),
 
   addFilesAndPages: (newFiles, newPages) => set((state) => {
     // Create new Map to ensure immutability
@@ -350,3 +358,21 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   setProcessingProgress: (progress) => set({ processingProgress: progress }),
   setProcessingMessage: (message) => set({ processingMessage: message }),
 }));
+
+// Automatic sync with IndexedDB
+usePdfStore.subscribe(
+  (state, prevState) => {
+    // Only save if files, pages, or activeTool changed
+    if (
+      state.files !== prevState.files ||
+      state.pages !== prevState.pages ||
+      state.activeTool !== prevState.activeTool
+    ) {
+      if (state.isInitialized) {
+        import('../services/storageService').then(({ saveSession }) => {
+          saveSession(state.files, state.pages, state.activeTool);
+        });
+      }
+    }
+  }
+);

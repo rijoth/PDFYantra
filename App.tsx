@@ -28,11 +28,19 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      const session = await loadSession();
-      if (session) {
-        restoreSession(session.files, session.pages);
+      try {
+        const session = await loadSession();
+        if (session) {
+          restoreSession(session.files, session.pages, session.activeTool);
+          if (session.pages.length > 0) {
+            usePdfStore.getState().setHasRecoveredSession(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load session:', err);
+      } finally {
+        setInitialized(true);
       }
-      setInitialized(true);
     };
     init();
   }, [restoreSession, setInitialized]);

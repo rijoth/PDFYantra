@@ -3,6 +3,7 @@ import React from 'react';
 import Navigation from './Sidebar'; // Re-using Sidebar file as Navigation
 import TopAppBar from './Header'; // Re-using Header file as TopAppBar
 import Footer from './Footer';
+import SessionIndicator from './SessionIndicator';
 import { ToolType } from '../types';
 
 interface DashboardLayoutProps {
@@ -18,6 +19,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   return (
     <div className="h-screen flex overflow-hidden bg-background font-sans text-onSurfaceVariant selection:bg-primaryContainer selection:text-onPrimaryContainer">
+      <SessionIndicator />
       {/* Navigation (Rail on Desktop, Bottom Bar on Mobile) */}
       <Navigation activeTool={activeTool} onToolChange={onToolChange} />
 
