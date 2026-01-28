@@ -281,3 +281,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 node_modules/
+
+# YoYo AI version control directory
+.yoyo/

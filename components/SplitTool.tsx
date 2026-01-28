@@ -11,7 +11,10 @@ interface SplitToolProps {
 }
 
 const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
-    const { pages, resetProcessing, setStatus, setDownloadInfo, setError, files, setPreviewPageId, status, downloadInfo } = usePdfStore();
+    const {
+        pages, resetProcessing, setStatus, setDownloadInfo, setError, files,
+        setPreviewPageId, status, downloadInfo, setProcessingMessage, setProcessingProgress
+    } = usePdfStore();
 
     const [selectedFileId, setSelectedFileId] = useState<string>('all');
     const [config, setConfig] = useState<SplitConfig>({
@@ -40,12 +43,16 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
     // Handle local split execution
     const handleExecuteSplit = async () => {
         setStatus(AppStatus.PROCESSING);
+        setProcessingMessage("Splitting pages...");
+        setProcessingProgress(0);
         setError(null);
         try {
             setTimeout(async () => {
                 try {
                     // We pass targetPages (subset) instead of all pages
-                    const result = await splitWorkspace(targetPages, files, config);
+                    const result = await splitWorkspace(targetPages, files, config, (curr, total) => {
+                        setProcessingProgress(Math.round((curr / total) * 100));
+                    });
                     const url = URL.createObjectURL(result.blob);
                     setDownloadInfo({
                         url,
@@ -54,12 +61,16 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                         isZip: result.isZip
                     });
                     setStatus(AppStatus.SUCCESS);
+                    setProcessingMessage(null);
+                    setProcessingProgress(0);
                 } catch (err: any) {
                     setError(err.message);
+                    setProcessingMessage(null);
                 }
             }, 100);
         } catch (err: any) {
             setError(err.message);
+            setProcessingMessage(null);
         }
     };
 

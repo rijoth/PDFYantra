@@ -6,6 +6,7 @@ import OrganizerTool from './components/OrganizerTool';
 import SplitTool from './components/SplitTool';
 import ConvertTool from './components/ConvertTool';
 import CompressTool from './components/CompressTool';
+import ProcessingOverlay from './components/ProcessingOverlay';
 import { usePdfStore } from './store/usePdfStore';
 import { loadSession } from './services/storageService';
 import { AppStatus } from './types';
@@ -37,11 +38,11 @@ const App: React.FC = () => {
   }, [restoreSession, setInitialized]);
 
   if (!isInitialized) {
-     return (
-         <div className="h-screen w-full flex items-center justify-center bg-background text-primary">
-             <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
-         </div>
-     );
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background text-primary">
+        <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+      </div>
+    );
   }
 
   const renderContent = () => {
@@ -51,7 +52,7 @@ const App: React.FC = () => {
       case 'merge':
         return <OrganizerTool />;
       case 'split':
-        return <SplitTool onSplit={() => {}} isProcessing={status === AppStatus.PROCESSING} />;
+        return <SplitTool onSplit={() => { }} isProcessing={status === AppStatus.PROCESSING} />;
       case 'convert':
         return <ConvertTool />;
       case 'compress':
@@ -63,6 +64,7 @@ const App: React.FC = () => {
 
   return (
     <DashboardLayout activeTool={activeTool} onToolChange={setActiveTool}>
+      <ProcessingOverlay />
       {renderContent()}
     </DashboardLayout>
   );

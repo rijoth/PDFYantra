@@ -11,7 +11,10 @@ const COMPRESSION_PROFILES: Record<string, CompressionSettings> = {
 };
 
 const CompressTool: React.FC = () => {
-    const { files, pages, addFilesAndPages, replaceFileContent, setStatus, setError, status } = usePdfStore();
+    const {
+        files, pages, addFilesAndPages, replaceFileContent, setStatus,
+        setError, status, setProcessingMessage, setProcessingProgress
+    } = usePdfStore();
 
     // Selection State
     const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
@@ -26,7 +29,6 @@ const CompressTool: React.FC = () => {
 
     // Processing State
     const [processingFileId, setProcessingFileId] = useState<string | null>(null);
-    const [progress, setProgress] = useState<{ current: number, total: number }>({ current: 0, total: 0 });
 
     // Results State
     const [results, setResults] = useState<Map<string, CompressionResult>>(new Map());
@@ -59,13 +61,15 @@ const CompressTool: React.FC = () => {
 
             for (const file of selectedFiles) {
                 setProcessingFileId(file.id);
-                setProgress({ current: 0, total: 100 }); // Indeterminate start
 
                 const result = await compressPdfFile(
                     file.file,
                     activeSettings.quality,
                     activeSettings.scale,
-                    (curr, total) => setProgress({ current: curr, total })
+                    (curr, total) => {
+                        setProcessingProgress(Math.round((curr / total) * 100));
+                        setProcessingMessage(`Compressing ${file.name}... (Page ${curr}/${total})`);
+                    }
                 );
 
                 newResults.set(file.id, {
@@ -79,9 +83,12 @@ const CompressTool: React.FC = () => {
 
             setResults(newResults);
             setStatus(AppStatus.SUCCESS);
+            setProcessingMessage(null);
+            setProcessingProgress(0);
         } catch (err: any) {
             console.error(err);
             setError("Compression failed. " + err.message);
+            setProcessingMessage(null);
         } finally {
             setProcessingFileId(null);
         }
@@ -258,10 +265,7 @@ const CompressTool: React.FC = () => {
                                     </div>
                                     {isProcessing && (
                                         <div className="w-full h-1 bg-surfaceVariant rounded-full mt-2 overflow-hidden">
-                                            <div
-                                                className="h-full bg-primary transition-all duration-300"
-                                                style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                                            ></div>
+                                            {/* Progress bar removed since we use global overlay for better blocking */}
                                         </div>
                                     )}
                                 </div>

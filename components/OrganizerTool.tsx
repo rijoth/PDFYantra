@@ -58,10 +58,11 @@ const OrganizerTool: React.FC = () => {
         isSearching,
         searchProgress,
         clearSearch,
-        setPreviewPageId
+        setPreviewPageId,
+        setProcessingMessage,
+        setProcessingProgress
     } = usePdfStore();
 
-    const [parsingFile, setParsingFile] = useState<string | null>(null);
     const [showFileManager, setShowFileManager] = useState(false);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [showSearchInput, setShowSearchInput] = useState(false);
@@ -88,10 +89,14 @@ const OrganizerTool: React.FC = () => {
         const newUploadedFiles: UploadedFile[] = [];
         let allNewPages: any[] = [];
 
+        setStatus(AppStatus.PROCESSING);
+
         for (let i = 0; i < rawFiles.length; i++) {
             const file = rawFiles[i];
             const fileId = Math.random().toString(36).substr(2, 9);
-            setParsingFile(file.name);
+
+            setProcessingMessage(`Loading ${file.name}... (${i + 1}/${rawFiles.length})`);
+            setProcessingProgress(0);
 
             try {
                 const uploadedFile: UploadedFile = {
@@ -102,25 +107,30 @@ const OrganizerTool: React.FC = () => {
                     color: FILE_COLORS[(startColorIdx + i) % FILE_COLORS.length]
                 };
 
-                const extractedPages = await generateThumbnails(uploadedFile);
+                const extractedPages = await generateThumbnails(uploadedFile, (curr, total) => {
+                    setProcessingProgress(Math.round((curr / total) * 100));
+                });
                 newUploadedFiles.push(uploadedFile);
                 allNewPages = [...allNewPages, ...extractedPages];
 
             } catch (err) {
                 console.error("Error processing file", file.name, err);
                 setError(`Failed to load ${file.name}.`);
-                setParsingFile(null);
                 return;
             }
         }
 
         addFilesAndPages(newUploadedFiles, allNewPages);
-        setParsingFile(null);
-    }, [fileMap, addFilesAndPages, setError]);
+        setProcessingMessage(null);
+        setProcessingProgress(0);
+        setStatus(AppStatus.IDLE);
+    }, [fileMap, addFilesAndPages, setError, setStatus, setProcessingMessage, setProcessingProgress]);
 
     const handleMerge = async () => {
         if (pages.length < 1) return;
         setStatus(AppStatus.PROCESSING);
+        setProcessingMessage("Merging pages...");
+        setProcessingProgress(0);
 
         setTimeout(async () => {
             try {
@@ -128,7 +138,9 @@ const OrganizerTool: React.FC = () => {
                     ? pages.filter(p => selectedPageIds.has(p.id))
                     : pages;
 
-                const mergedPdfBytes = await mergePages(pagesToMerge, fileMap);
+                const mergedPdfBytes = await mergePages(pagesToMerge, fileMap, (curr, total) => {
+                    setProcessingProgress(Math.round((curr / total) * 100));
+                });
                 const blob = new Blob([mergedPdfBytes as any], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
 
@@ -139,8 +151,11 @@ const OrganizerTool: React.FC = () => {
                     isZip: false
                 });
                 setStatus(AppStatus.SUCCESS);
+                setProcessingMessage(null);
+                setProcessingProgress(0);
             } catch (err: any) {
                 setError(err.message);
+                setProcessingMessage(null);
             }
         }, 100);
     };
@@ -255,15 +270,6 @@ const OrganizerTool: React.FC = () => {
             {showFileManager && <FileManager onClose={() => setShowFileManager(false)} />}
             <PagePreview />
 
-            {/* Loading Dialog */}
-            {parsingFile && (
-                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-center justify-center">
-                    <div className="bg-surface p-6 rounded-md3 shadow-elevation-3 flex items-center gap-4 animate-scale-in min-w-[300px]">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="font-medium text-onSurfaceVariant">Parsing {parsingFile}...</p>
-                    </div>
-                </div>
-            )}
 
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">

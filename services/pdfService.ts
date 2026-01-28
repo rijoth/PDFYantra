@@ -16,7 +16,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pd
 /**
  * Generates thumbnails for all pages in a PDF file.
  */
-export const generateThumbnails = async (file: UploadedFile): Promise<PDFPage[]> => {
+export const generateThumbnails = async (
+  file: UploadedFile,
+  onProgress?: (current: number, total: number) => void
+): Promise<PDFPage[]> => {
   const fileBuffer = await file.file.arrayBuffer();
 
   // Load using pdf.js for rendering
@@ -28,6 +31,7 @@ export const generateThumbnails = async (file: UploadedFile): Promise<PDFPage[]>
   const scale = pdf.numPages > 50 ? 0.3 : 0.5;
 
   for (let i = 1; i <= pdf.numPages; i++) {
+    if (onProgress) onProgress(i, pdf.numPages);
     const page = await pdf.getPage(i);
     const viewport = page.getViewport({ scale });
 
@@ -104,7 +108,8 @@ export const renderPageHighRes = async (
  */
 export const mergePages = async (
   pages: PDFPage[],
-  fileMap: Map<string, UploadedFile>
+  fileMap: Map<string, UploadedFile>,
+  onProgress?: (current: number, total: number) => void
 ): Promise<Uint8Array> => {
   if (pages.length === 0) {
     throw new Error("No pages to merge");
@@ -116,7 +121,9 @@ export const mergePages = async (
     // Cache loaded source documents to avoid parsing multiple times
     const loadedDocs = new Map<string, PDFDocument>();
 
-    for (const page of pages) {
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      if (onProgress) onProgress(i + 1, pages.length);
       const file = fileMap.get(page.fileId);
       if (!file) {
         throw new Error(`Source file for page not found: ${page.fileId}`);
@@ -157,7 +164,8 @@ export const mergePages = async (
 export const splitWorkspace = async (
   pages: PDFPage[],
   fileMap: Map<string, UploadedFile>,
-  config: SplitConfig
+  config: SplitConfig,
+  onProgress?: (current: number, total: number) => void
 ): Promise<{ blob: Blob; filename: string; isZip: boolean }> => {
 
   if (pages.length === 0) throw new Error("Workspace is empty.");
@@ -202,7 +210,14 @@ export const splitWorkspace = async (
 
     const subDoc = await PDFDocument.create();
 
-    for (const index of pageIndices) {
+    const totalInnerPages = pageIndices.length;
+    for (let j = 0; j < totalInnerPages; j++) {
+      const index = pageIndices[j];
+      if (onProgress) {
+        // Simple heuristic for progress across multiple files being generated
+        const overallProgress = (i / ranges.length) + ((j / totalInnerPages) / ranges.length);
+        onProgress(Math.round(overallProgress * 100), 100);
+      }
       const pageMeta = pages[index];
       const file = fileMap.get(pageMeta.fileId);
 

@@ -19,18 +19,22 @@ interface PdfState {
   downloadInfo: ProcessingResult | null;
   isInitialized: boolean;
   previewPageId: string | null;
-  
+
   // --- Search State ---
   searchQuery: string;
   searchResults: SearchResult[];
   isSearching: boolean;
   searchProgress: number;
 
+  // --- Global Processing State ---
+  processingProgress: number; // 0-100
+  processingMessage: string | null;
+
   // --- Actions ---
   setActiveTool: (tool: ToolType) => void;
   setInitialized: (val: boolean) => void;
   restoreSession: (files: Map<string, UploadedFile>, pages: PDFPage[]) => void;
-  
+
   // File & Page Management
   addFilesAndPages: (newFiles: UploadedFile[], newPages: PDFPage[]) => void;
   replaceFileContent: (fileId: string, newBlob: Blob, newFilename: string) => Promise<void>;
@@ -44,7 +48,7 @@ interface PdfState {
   toggleSelectPage: (pageId: string, isMulti: boolean) => void;
   selectAllPages: () => void;
   deselectAllPages: () => void;
-  
+
   // Manipulation
   rotatePage: (pageId: string, direction: 'cw' | 'ccw') => void;
   rotateSelectedPages: (direction: 'cw' | 'ccw') => void;
@@ -55,13 +59,17 @@ interface PdfState {
   setError: (msg: string | null) => void;
   setDownloadInfo: (info: ProcessingResult | null) => void;
   resetProcessing: () => void;
-  
+
   // Preview
   setPreviewPageId: (id: string | null) => void;
 
   // Search
   performSearch: (query: string) => Promise<void>;
   clearSearch: () => void;
+
+  // Global Processing Actions
+  setProcessingProgress: (progress: number) => void;
+  setProcessingMessage: (message: string | null) => void;
 }
 
 export const usePdfStore = create<PdfState>((set, get) => ({
@@ -82,9 +90,13 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   isSearching: false,
   searchProgress: 0,
 
+  // Global Processing Initial State
+  processingProgress: 0,
+  processingMessage: null,
+
   // --- Actions ---
 
-  setActiveTool: (tool) => set({ 
+  setActiveTool: (tool) => set({
     activeTool: tool,
     status: AppStatus.IDLE,
     errorMessage: null,
@@ -117,67 +129,67 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   }),
 
   replaceFileContent: async (fileId, newBlob, newFilename) => {
-      const state = get();
-      const existingFile = state.files.get(fileId);
-      
-      if (!existingFile) return;
+    const state = get();
+    const existingFile = state.files.get(fileId);
 
-      // 1. Create new File object
-      const newFileObj = new File([newBlob], newFilename, { type: 'application/pdf' });
-      
-      const updatedUploadedFile: UploadedFile = {
-          ...existingFile,
-          file: newFileObj,
-          name: newFilename,
-          size: newFileObj.size
-      };
+    if (!existingFile) return;
 
-      // 2. Generate new thumbnails
-      // Note: This is an async operation inside a store action. 
-      // Ideally, thumbnails generation should happen in a service, but here we need to sync state.
-      const newPages = await generateThumbnails(updatedUploadedFile);
-      
-      // Clear search cache because content changed
-      clearSearchCache();
+    // 1. Create new File object
+    const newFileObj = new File([newBlob], newFilename, { type: 'application/pdf' });
 
-      // 3. Update Store
-      set((currentState) => {
-          const nextFiles = new Map(currentState.files);
-          nextFiles.set(fileId, updatedUploadedFile);
+    const updatedUploadedFile: UploadedFile = {
+      ...existingFile,
+      file: newFileObj,
+      name: newFilename,
+      size: newFileObj.size
+    };
 
-          // Update pages: We need to preserve the relative order/position of the pages
-          // belonging to this file, but their content has changed.
-          // Since compression preserves page count usually, we can map 1:1.
-          
-          const nextAllPages = currentState.pages.map(p => {
-              if (p.fileId === fileId) {
-                  // Find corresponding new page by index
-                  const match = newPages.find(np => np.pageIndex === p.pageIndex);
-                  if (match) {
-                      return {
-                          ...p,
-                          thumbnailUrl: match.thumbnailUrl
-                          // We preserve ID and rotation from the workspace
-                      };
-                  }
-              }
-              return p;
-          });
+    // 2. Generate new thumbnails
+    // Note: This is an async operation inside a store action. 
+    // Ideally, thumbnails generation should happen in a service, but here we need to sync state.
+    const newPages = await generateThumbnails(updatedUploadedFile);
 
-          return {
-              files: nextFiles,
-              pages: nextAllPages
-          };
+    // Clear search cache because content changed
+    clearSearchCache();
+
+    // 3. Update Store
+    set((currentState) => {
+      const nextFiles = new Map(currentState.files);
+      nextFiles.set(fileId, updatedUploadedFile);
+
+      // Update pages: We need to preserve the relative order/position of the pages
+      // belonging to this file, but their content has changed.
+      // Since compression preserves page count usually, we can map 1:1.
+
+      const nextAllPages = currentState.pages.map(p => {
+        if (p.fileId === fileId) {
+          // Find corresponding new page by index
+          const match = newPages.find(np => np.pageIndex === p.pageIndex);
+          if (match) {
+            return {
+              ...p,
+              thumbnailUrl: match.thumbnailUrl
+              // We preserve ID and rotation from the workspace
+            };
+          }
+        }
+        return p;
       });
+
+      return {
+        files: nextFiles,
+        pages: nextAllPages
+      };
+    });
   },
 
   removeFile: (fileId) => set((state) => {
     const nextFiles = new Map(state.files);
     nextFiles.delete(fileId);
-    
+
     // Cascading delete: remove pages belonging to this file
     const nextPages = state.pages.filter(p => p.fileId !== fileId);
-    
+
     // Clean up selection
     const nextSelected = new Set(state.selectedPageIds);
     state.pages
@@ -205,10 +217,10 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   sortPagesByFileOrder: (orderedFileIds) => set((state) => {
     const newPages: PDFPage[] = [];
     const currentPages = [...state.pages];
-    
+
     orderedFileIds.forEach(fileId => {
-        const filePages = currentPages.filter(p => p.fileId === fileId);
-        newPages.push(...filePages);
+      const filePages = currentPages.filter(p => p.fileId === fileId);
+      newPages.push(...filePages);
     });
 
     return { pages: newPages };
@@ -218,7 +230,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     // Also clear the persistent storage
     clearSession();
     clearSearchCache();
-    
+
     set({
       files: new Map(),
       pages: [],
@@ -270,7 +282,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   rotateSelectedPages: (direction) => set((state) => {
     if (state.selectedPageIds.size === 0) return {};
-    
+
     return {
       pages: state.pages.map(p => {
         if (state.selectedPageIds.has(p.id)) {
@@ -293,11 +305,11 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   }),
 
   // --- Processing UI ---
-  
+
   setStatus: (status) => set({ status }),
   setError: (errorMessage) => set({ errorMessage, status: AppStatus.ERROR }),
   setDownloadInfo: (downloadInfo) => set({ downloadInfo }),
-  
+
   resetProcessing: () => set({
     status: AppStatus.IDLE,
     errorMessage: null,
@@ -307,10 +319,10 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   setPreviewPageId: (id) => set({ previewPageId: id }),
 
   // --- Search Logic ---
-  
+
   performSearch: async (query: string) => {
     set({ searchQuery: query });
-    
+
     if (!query.trim()) {
       set({ searchResults: [], isSearching: false, searchProgress: 0 });
       return;
@@ -321,10 +333,10 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
     try {
       const results = await searchWorkspace(
-        query, 
-        files, 
+        query,
+        files,
         pages,
-        (curr, total) => set({ searchProgress: Math.round((curr/total) * 100) })
+        (curr, total) => set({ searchProgress: Math.round((curr / total) * 100) })
       );
       set({ searchResults: results, isSearching: false });
     } catch (err) {
@@ -333,5 +345,8 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     }
   },
 
-  clearSearch: () => set({ searchQuery: '', searchResults: [], searchProgress: 0 })
+  clearSearch: () => set({ searchQuery: '', searchResults: [], searchProgress: 0 }),
+
+  setProcessingProgress: (progress) => set({ processingProgress: progress }),
+  setProcessingMessage: (message) => set({ processingMessage: message }),
 }));
