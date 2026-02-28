@@ -27,7 +27,7 @@ const PasswordModal: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-surface w-full max-w-md rounded-2xl shadow-elevation-3 overflow-hidden animate-scale-in border border-surfaceVariant">
                 <div className="p-6 border-b border-surfaceVariant flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-primaryContainer text-onPrimaryContainer flex items-center justify-center text-xl shrink-0">

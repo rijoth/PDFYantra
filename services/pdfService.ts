@@ -405,10 +405,19 @@ export const compressPdfFile = async (
   onProgress: (current: number, total: number) => void
 ): Promise<{ blob: Blob; filename: string }> => {
   const arrayBuffer = await file.arrayBuffer();
-  const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-  const doc = await loadingTask.promise;
-  const numPages = doc.numPages;
+  let doc;
 
+  try {
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+    doc = await loadingTask.promise;
+  } catch (e: any) {
+    if (e.name === 'PasswordException' || e.message?.toLowerCase().includes('password')) {
+      throw new Error("This file is password protected. Please unlock it first in the Organizer.");
+    }
+    throw e;
+  }
+
+  const numPages = doc.numPages;
   const newPdf = await PDFDocument.create();
 
   for (let i = 1; i <= numPages; i++) {
@@ -451,7 +460,7 @@ export const compressPdfFile = async (
   const filename = file.name.replace(/\.pdf$/i, '_compressed.pdf');
 
   return { blob, filename };
-}
+};
 
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
