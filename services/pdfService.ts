@@ -14,6 +14,113 @@ export const pdfjs = (pdfjsLib as any).default || pdfjsLib;
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 /**
+ * Unlocks a password-protected PDF or simply passes it through if not encrypted.
+ */
+export const unlockPdfFile = async (
+  file: File,
+  password?: string
+): Promise<{ success: boolean; file?: File; needsPassword?: boolean; wrongPassword?: boolean }> => {
+  // 1. Try pdf-lib first to see if it's unencrypted or if we can open it directly.
+  try {
+    const fileBuffer = await file.arrayBuffer();
+    await PDFDocument.load(fileBuffer);
+    // If it works, we don't need to do anything else.
+    return { success: true, file };
+  } catch (e: any) {
+    // If it's an encryption error, we proceed to unlock/rasterize.
+    // Otherwise, it's a genuine error we should rethrow.
+    const isEncryptionError = e.name === 'EncryptedPDFError' ||
+      e.message?.toLowerCase().includes('encrypted') ||
+      e.message?.toLowerCase().includes('password');
+    if (!isEncryptionError) {
+      throw e;
+    }
+  }
+
+  // 2. If we're here, it's encrypted. Use pdf.js to unlock it for rasterization.
+  // We get a fresh buffer because the previous one might have been detached by some browser implementations
+  // when converted to ArrayBuffer, though usually it's pdfjs.getDocument({ data: ... }) that detaches it.
+  const fileBufferForJs = await file.arrayBuffer();
+
+  try {
+    const loadingTask = pdfjs.getDocument({ data: fileBufferForJs, password });
+    const doc = await loadingTask.promise;
+
+    // If we reach here, the document is successfully unlocked!
+
+    // 3. Rasterization Fallback
+    // Since we cannot structurally decrypt the PDF in the browser (pdf-lib lacks this),
+    // we rasterize it to a new, unencrypted document that looks identical.
+    const newPdf = await PDFDocument.create();
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const viewport = page.getViewport({ scale: 2.0 }); // 144 DPI
+
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext('2d');
+
+      if (context) {
+        await page.render({ canvasContext: context, viewport }).promise;
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        const imgBytes = await (await fetch(imgData)).arrayBuffer();
+        const jpgImage = await newPdf.embedJpg(imgBytes);
+
+        const newPage = newPdf.addPage([viewport.width, viewport.height]);
+        newPage.drawImage(jpgImage, {
+          x: 0,
+          y: 0,
+          width: viewport.width,
+          height: viewport.height
+        });
+      }
+    }
+
+    const unencryptedBytes = await newPdf.save();
+    const newFile = new File([unencryptedBytes as any], file.name, { type: 'application/pdf' });
+    return { success: true, file: newFile };
+
+  } catch (error: any) {
+    // pdfjs-dist throws PasswordException for wrong or missing passwords
+    if (error.name === 'PasswordException' || error.message?.toLowerCase().includes('password')) {
+      return { success: false, needsPassword: !password, wrongPassword: !!password };
+    }
+    throw error;
+  }
+};
+
+/**
+ * Handles the retry loop for unlocking a PDF that may be encrypted.
+ */
+export const processFileWithPassword = async (
+  file: File,
+  promptForPassword: (filename: string, isRetry: boolean) => Promise<string | null>
+): Promise<File | null> => {
+  let currentPassword = undefined;
+  let isRetry = false;
+
+  while (true) {
+    const result = await unlockPdfFile(file, currentPassword);
+    if (result.success && result.file) {
+      return result.file;
+    }
+    if (result.needsPassword || result.wrongPassword) {
+      const pwd = await promptForPassword(file.name, result.wrongPassword || false);
+      if (pwd === null) {
+        // User cancelled
+        return null;
+      }
+      currentPassword = pwd;
+      isRetry = true;
+    } else {
+      throw new Error(`Failed to process ${file.name}`);
+    }
+  }
+};
+
+/**
  * Generates thumbnails for all pages in a PDF file.
  */
 export const generateThumbnails = async (

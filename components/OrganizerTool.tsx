@@ -4,7 +4,7 @@ import PageGrid from './PageGrid';
 import FileManager from './FileManager';
 import PagePreview from './PagePreview';
 import { UploadedFile, AppStatus } from '../types';
-import { generateThumbnails, mergePages, formatFileSize } from '../services/pdfService';
+import { generateThumbnails, mergePages, formatFileSize, processFileWithPassword } from '../services/pdfService';
 import { usePdfStore } from '../store/usePdfStore';
 
 const FILE_COLORS = ['#0061A4', '#B3261E', '#2D6B28', '#E68619', '#6750A4'];
@@ -60,7 +60,16 @@ const OrganizerTool: React.FC = () => {
         clearSearch,
         setPreviewPageId,
         setProcessingMessage,
-        setProcessingProgress
+        setProcessingProgress,
+        duplicateSelectedPages,
+        lockHistory,
+        unlockHistory,
+        undo,
+        redo,
+        past,
+        future,
+        isHistoryLocked,
+        promptForPassword
     } = usePdfStore();
 
     const [showFileManager, setShowFileManager] = useState(false);
@@ -99,11 +108,16 @@ const OrganizerTool: React.FC = () => {
             setProcessingProgress(0);
 
             try {
+                const unlockedFile = await processFileWithPassword(file, promptForPassword);
+                if (!unlockedFile) {
+                    continue; // User cancelled password prompt, skip this file
+                }
+
                 const uploadedFile: UploadedFile = {
                     id: fileId,
-                    file,
-                    name: file.name,
-                    size: file.size,
+                    file: unlockedFile,
+                    name: unlockedFile.name,
+                    size: unlockedFile.size,
                     color: FILE_COLORS[(startColorIdx + i) % FILE_COLORS.length]
                 };
 
@@ -128,6 +142,7 @@ const OrganizerTool: React.FC = () => {
 
     const handleMerge = async () => {
         if (pages.length < 1) return;
+        lockHistory();
         setStatus(AppStatus.PROCESSING);
         setProcessingMessage("Merging pages...");
         setProcessingProgress(0);
@@ -156,6 +171,7 @@ const OrganizerTool: React.FC = () => {
             } catch (err: any) {
                 setError(err.message);
                 setProcessingMessage(null);
+                unlockHistory();
             }
         }, 100);
     };
@@ -253,7 +269,10 @@ const OrganizerTool: React.FC = () => {
                             <i className="fa-solid fa-download"></i> Download
                         </a>
                         <button
-                            onClick={resetProcessing}
+                            onClick={() => {
+                                resetProcessing();
+                                unlockHistory();
+                            }}
                             className="h-12 rounded-pill text-primary font-medium hover:bg-primaryContainer/20 transition-all ripple"
                         >
                             Close
@@ -350,6 +369,28 @@ const OrganizerTool: React.FC = () => {
                             )}
                         </div>
                     )}
+
+                    {/* Mobile History Controls (Visible only on small screens) */}
+                    {pages.length > 0 && (
+                        <div className="flex md:hidden items-center gap-1 bg-surfaceVariant/30 rounded-lg p-1 border border-outline/10 ml-auto">
+                            <button
+                                onClick={() => undo()}
+                                disabled={past.length === 0 || isHistoryLocked}
+                                className="w-9 h-9 rounded-md flex items-center justify-center text-onSurfaceVariant active:bg-surfaceVariant disabled:opacity-30 transition-all"
+                                title="Undo"
+                            >
+                                <i className="fa-solid fa-rotate-left text-sm"></i>
+                            </button>
+                            <button
+                                onClick={() => redo()}
+                                disabled={future.length === 0 || isHistoryLocked}
+                                className="w-9 h-9 rounded-md flex items-center justify-center text-onSurfaceVariant active:bg-surfaceVariant disabled:opacity-30 transition-all"
+                                title="Redo"
+                            >
+                                <i className="fa-solid fa-rotate-right text-sm"></i>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex gap-2 ml-auto">
@@ -441,9 +482,10 @@ const OrganizerTool: React.FC = () => {
                     <span className="text-sm font-bold pl-2">{selectedPageIds.size} selected</span>
                     <div className="h-4 w-px bg-onSecondaryContainer/20"></div>
 
-                    <button onClick={() => rotateSelectedPages('ccw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors"><i className="fa-solid fa-rotate-left"></i></button>
-                    <button onClick={() => rotateSelectedPages('cw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors"><i className="fa-solid fa-rotate-right"></i></button>
-                    <button onClick={() => deleteSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors"><i className="fa-solid fa-trash"></i></button>
+                    <button onClick={() => rotateSelectedPages('ccw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Rotate Left"><i className="fa-solid fa-rotate-left"></i></button>
+                    <button onClick={() => rotateSelectedPages('cw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Rotate Right"><i className="fa-solid fa-rotate-right"></i></button>
+                    <button onClick={() => duplicateSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Duplicate"><i className="fa-regular fa-copy"></i></button>
+                    <button onClick={() => deleteSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors text-red-400" title="Delete"><i className="fa-solid fa-trash"></i></button>
                 </div>
             </div>
         </div>

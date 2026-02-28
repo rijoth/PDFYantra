@@ -73,3 +73,9 @@ export interface SearchResult {
   fileColor: string;
   matches: SearchMatch[];
 }
+
+export interface HistoryEntry {
+  pages: PDFPage[];
+  selectedPageIds: Set<string>;
+  timestamp: number;
+}

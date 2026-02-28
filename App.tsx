@@ -7,6 +7,7 @@ import SplitTool from './components/SplitTool';
 import ConvertTool from './components/ConvertTool';
 import CompressTool from './components/CompressTool';
 import ProcessingOverlay from './components/ProcessingOverlay';
+import PasswordModal from './components/PasswordModal';
 import { usePdfStore } from './store/usePdfStore';
 import { loadSession } from './services/storageService';
 import { AppStatus } from './types';
@@ -25,6 +26,24 @@ const App: React.FC = () => {
     };
     document.title = titles[activeTool] || titles.home;
   }, [activeTool]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) {
+          usePdfStore.getState().redo();
+        } else {
+          usePdfStore.getState().undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        usePdfStore.getState().redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -73,6 +92,7 @@ const App: React.FC = () => {
   return (
     <DashboardLayout activeTool={activeTool} onToolChange={setActiveTool}>
       <ProcessingOverlay />
+      <PasswordModal />
       {renderContent()}
     </DashboardLayout>
   );

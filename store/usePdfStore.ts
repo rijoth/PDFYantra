@@ -1,7 +1,7 @@
 
 
 import { create } from 'zustand';
-import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile, SearchResult } from '../types';
+import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile, SearchResult, HistoryEntry } from '../types';
 import { clearSession } from '../services/storageService';
 import { generateThumbnails } from '../services/pdfService';
 import { searchWorkspace, clearSearchCache } from '../services/searchService';
@@ -20,6 +20,11 @@ interface PdfState {
   isInitialized: boolean;
   previewPageId: string | null;
   hasRecoveredSession: boolean;
+
+  // --- History State ---
+  past: HistoryEntry[];
+  future: HistoryEntry[];
+  isHistoryLocked: boolean;
 
   // --- Search State ---
   searchQuery: string;
@@ -73,6 +78,21 @@ interface PdfState {
   // Global Processing Actions
   setProcessingProgress: (progress: number) => void;
   setProcessingMessage: (message: string | null) => void;
+
+  // History Actions
+  undo: () => void;
+  redo: () => void;
+  pushToHistory: () => void;
+  lockHistory: () => void;
+  unlockHistory: () => void;
+
+  // Duplication
+  duplicateSelectedPages: () => void;
+
+  // --- Password Prompt State ---
+  passwordPrompt: { filename: string; isRetry: boolean; resolve: (pwd: string | null) => void } | null;
+  promptForPassword: (filename: string, isRetry: boolean) => Promise<string | null>;
+  resolvePasswordPrompt: (password: string | null) => void;
 }
 
 export const usePdfStore = create<PdfState>((set, get) => ({
@@ -98,7 +118,79 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   processingProgress: 0,
   processingMessage: null,
 
+  // History Initial State
+  past: [],
+  future: [],
+  isHistoryLocked: false,
+
+  // Password Prompt Initial State
+  passwordPrompt: null,
+
   // --- Actions ---
+
+  pushToHistory: () => {
+    const { pages, selectedPageIds, isHistoryLocked } = get();
+    if (isHistoryLocked) return;
+
+    set((state) => ({
+      past: [
+        ...state.past,
+        {
+          pages: JSON.parse(JSON.stringify(state.pages)), // Deep copy to preserve state
+          selectedPageIds: new Set(state.selectedPageIds),
+          timestamp: Date.now()
+        }
+      ].slice(-50), // Keep last 50 actions
+      future: [] // New action clears future
+    }));
+  },
+
+  undo: () => {
+    const { past, pages, selectedPageIds, isHistoryLocked } = get();
+    if (isHistoryLocked || past.length === 0) return;
+
+    const previous = past[past.length - 1];
+    const remainingPast = past.slice(0, past.length - 1);
+
+    set({
+      pages: previous.pages,
+      selectedPageIds: previous.selectedPageIds,
+      past: remainingPast,
+      future: [
+        {
+          pages: JSON.parse(JSON.stringify(pages)),
+          selectedPageIds: new Set(selectedPageIds),
+          timestamp: Date.now()
+        },
+        ...get().future
+      ]
+    });
+  },
+
+  redo: () => {
+    const { future, pages, selectedPageIds, isHistoryLocked } = get();
+    if (isHistoryLocked || future.length === 0) return;
+
+    const next = future[0];
+    const remainingFuture = future.slice(1);
+
+    set({
+      pages: next.pages,
+      selectedPageIds: next.selectedPageIds,
+      future: remainingFuture,
+      past: [
+        ...get().past,
+        {
+          pages: JSON.parse(JSON.stringify(pages)),
+          selectedPageIds: new Set(selectedPageIds),
+          timestamp: Date.now()
+        }
+      ]
+    });
+  },
+
+  lockHistory: () => set({ isHistoryLocked: true }),
+  unlockHistory: () => set({ isHistoryLocked: false }),
 
   setActiveTool: (tool) => set({
     activeTool: tool,
@@ -122,19 +214,20 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   dismissRecoveryIndication: () => set({ hasRecoveredSession: false }),
 
-  addFilesAndPages: (newFiles, newPages) => set((state) => {
-    // Create new Map to ensure immutability
-    const nextFiles = new Map(state.files);
-    newFiles.forEach(f => nextFiles.set(f.id, f));
+  addFilesAndPages: (newFiles, newPages) => {
+    get().pushToHistory();
+    set((state) => {
+      const nextFiles = new Map(state.files);
+      newFiles.forEach(f => nextFiles.set(f.id, f));
 
-    return {
-      files: nextFiles,
-      pages: [...state.pages, ...newPages],
-      // Reset success state if we add new files after a download
-      status: state.status === AppStatus.SUCCESS ? AppStatus.IDLE : state.status,
-      downloadInfo: state.status === AppStatus.SUCCESS ? null : state.downloadInfo
-    };
-  }),
+      return {
+        files: nextFiles,
+        pages: [...state.pages, ...newPages],
+        status: state.status === AppStatus.SUCCESS ? AppStatus.IDLE : state.status,
+        downloadInfo: state.status === AppStatus.SUCCESS ? null : state.downloadInfo
+      };
+    });
+  },
 
   replaceFileContent: async (fileId, newBlob, newFilename) => {
     const state = get();
@@ -142,6 +235,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
     if (!existingFile) return;
 
+    get().pushToHistory();
     // 1. Create new File object
     const newFileObj = new File([newBlob], newFilename, { type: 'application/pdf' });
 
@@ -191,36 +285,67 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     });
   },
 
-  removeFile: (fileId) => set((state) => {
-    const nextFiles = new Map(state.files);
-    nextFiles.delete(fileId);
+  removeFile: (fileId) => {
+    get().pushToHistory();
+    set((state) => {
+      const nextFiles = new Map(state.files);
+      nextFiles.delete(fileId);
 
-    // Cascading delete: remove pages belonging to this file
-    const nextPages = state.pages.filter(p => p.fileId !== fileId);
+      const nextPages = state.pages.filter(p => p.fileId !== fileId);
 
-    // Clean up selection
-    const nextSelected = new Set(state.selectedPageIds);
-    state.pages
-      .filter(p => p.fileId === fileId)
-      .forEach(p => nextSelected.delete(p.id));
+      const nextSelected = new Set(state.selectedPageIds);
+      state.pages
+        .filter(p => p.fileId === fileId)
+        .forEach(p => nextSelected.delete(p.id));
 
-    return {
-      files: nextFiles,
-      pages: nextPages,
-      selectedPageIds: nextSelected
-    };
-  }),
+      return {
+        files: nextFiles,
+        pages: nextPages,
+        selectedPageIds: nextSelected
+      };
+    });
+  },
 
-  removePage: (pageId) => set((state) => {
-    const nextSelected = new Set(state.selectedPageIds);
-    nextSelected.delete(pageId);
-    return {
-      pages: state.pages.filter(p => p.id !== pageId),
-      selectedPageIds: nextSelected
-    };
-  }),
+  removePage: (pageId) => {
+    get().pushToHistory();
+    set((state) => {
+      const nextSelected = new Set(state.selectedPageIds);
+      nextSelected.delete(pageId);
+      return {
+        pages: state.pages.filter(p => p.id !== pageId),
+        selectedPageIds: nextSelected
+      };
+    });
+  },
 
-  setPages: (newPages) => set({ pages: newPages }),
+  setPages: (newPages) => {
+    // Only push to history if order actually changed
+    if (JSON.stringify(get().pages.map(p => p.id)) !== JSON.stringify(newPages.map(p => p.id))) {
+      get().pushToHistory();
+    }
+    set({ pages: newPages });
+  },
+
+  duplicateSelectedPages: () => {
+    const { pages, selectedPageIds } = get();
+    if (selectedPageIds.size === 0) return;
+
+    get().pushToHistory();
+
+    const newPages: PDFPage[] = [];
+    pages.forEach(p => {
+      newPages.push(p);
+      if (selectedPageIds.has(p.id)) {
+        newPages.push({
+          ...p,
+          id: Math.random().toString(36).substr(2, 9),
+          // Copying same fileId and thumbnail
+        });
+      }
+    });
+
+    set({ pages: newPages });
+  },
 
   sortPagesByFileOrder: (orderedFileIds) => set((state) => {
     const newPages: PDFPage[] = [];
@@ -276,24 +401,11 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   // --- Manipulation Logic ---
 
-  rotatePage: (pageId, direction) => set((state) => ({
-    pages: state.pages.map(p => {
-      if (p.id === pageId) {
-        const delta = direction === 'cw' ? 90 : -90;
-        let newRot = (p.rotation + delta) % 360;
-        if (newRot < 0) newRot += 360;
-        return { ...p, rotation: newRot };
-      }
-      return p;
-    })
-  })),
-
-  rotateSelectedPages: (direction) => set((state) => {
-    if (state.selectedPageIds.size === 0) return {};
-
-    return {
+  rotatePage: (pageId, direction) => {
+    get().pushToHistory();
+    set((state) => ({
       pages: state.pages.map(p => {
-        if (state.selectedPageIds.has(p.id)) {
+        if (p.id === pageId) {
           const delta = direction === 'cw' ? 90 : -90;
           let newRot = (p.rotation + delta) % 360;
           if (newRot < 0) newRot += 360;
@@ -301,16 +413,41 @@ export const usePdfStore = create<PdfState>((set, get) => ({
         }
         return p;
       })
-    };
-  }),
+    }));
+  },
 
-  deleteSelectedPages: () => set((state) => {
-    if (state.selectedPageIds.size === 0) return {};
-    return {
-      pages: state.pages.filter(p => !state.selectedPageIds.has(p.id)),
-      selectedPageIds: new Set()
-    };
-  }),
+  rotateSelectedPages: (direction) => {
+    const { selectedPageIds } = get();
+    if (selectedPageIds.size === 0) return;
+
+    get().pushToHistory();
+    set((state) => {
+      return {
+        pages: state.pages.map(p => {
+          if (state.selectedPageIds.has(p.id)) {
+            const delta = direction === 'cw' ? 90 : -90;
+            let newRot = (p.rotation + delta) % 360;
+            if (newRot < 0) newRot += 360;
+            return { ...p, rotation: newRot };
+          }
+          return p;
+        })
+      };
+    });
+  },
+
+  deleteSelectedPages: () => {
+    const { selectedPageIds } = get();
+    if (selectedPageIds.size === 0) return;
+
+    get().pushToHistory();
+    set((state) => {
+      return {
+        pages: state.pages.filter(p => !state.selectedPageIds.has(p.id)),
+        selectedPageIds: new Set()
+      };
+    });
+  },
 
   // --- Processing UI ---
 
@@ -357,6 +494,24 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   setProcessingProgress: (progress) => set({ processingProgress: progress }),
   setProcessingMessage: (message) => set({ processingMessage: message }),
+
+  promptForPassword: (filename, isRetry) => {
+    const { passwordPrompt } = get();
+    if (passwordPrompt) {
+      passwordPrompt.resolve(null);
+    }
+    return new Promise<string | null>((resolve) => {
+      set({ passwordPrompt: { filename, isRetry, resolve } });
+    });
+  },
+
+  resolvePasswordPrompt: (password) => {
+    const { passwordPrompt } = get();
+    if (passwordPrompt) {
+      passwordPrompt.resolve(password);
+      set({ passwordPrompt: null });
+    }
+  },
 }));
 
 // Automatic sync with IndexedDB

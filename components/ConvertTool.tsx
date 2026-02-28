@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { AppStatus, ConvertFormat, UploadedFile } from '../types';
 import { convertToPdf, convertFromPdf } from '../services/conversionService';
-import { generateThumbnails, formatFileSize } from '../services/pdfService';
+import { generateThumbnails, formatFileSize, processFileWithPassword } from '../services/pdfService';
 import { isValidRangeFormat, parsePageRange } from '../utils/pdfUtils';
 
 const FILE_COLORS = ['#0061A4', '#B3261E', '#2D6B28', '#E68619', '#6750A4'];
@@ -17,7 +17,8 @@ const ConvertTool: React.FC = () => {
         setError,
         downloadInfo,
         setDownloadInfo,
-        resetProcessing
+        resetProcessing,
+        promptForPassword
     } = usePdfStore();
 
     const [activeTab, setActiveTab] = useState<'to_pdf' | 'from_pdf'>('from_pdf');
@@ -120,11 +121,15 @@ const ConvertTool: React.FC = () => {
             // 1. Process Native PDFs
             for (const file of pdfFiles) {
                 const fileId = Math.random().toString(36).substr(2, 9);
+
+                const unlockedFile = await processFileWithPassword(file, promptForPassword);
+                if (!unlockedFile) continue;
+
                 const uFile: UploadedFile = {
                     id: fileId,
-                    file,
-                    name: file.name,
-                    size: file.size,
+                    file: unlockedFile,
+                    name: unlockedFile.name,
+                    size: unlockedFile.size,
                     color: FILE_COLORS[(startColorIdx++) % FILE_COLORS.length]
                 };
                 const extracted = await generateThumbnails(uFile);
