@@ -136,7 +136,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       past: [
         ...state.past,
         {
-          pages: JSON.parse(JSON.stringify(state.pages)), // Deep copy to preserve state
+          pages: [...state.pages], // Shallow copy is enough as objects are treated as immutable
           selectedPageIds: new Set(state.selectedPageIds),
           timestamp: Date.now()
         }
@@ -158,7 +158,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       past: remainingPast,
       future: [
         {
-          pages: JSON.parse(JSON.stringify(pages)),
+          pages: [...pages],
           selectedPageIds: new Set(selectedPageIds),
           timestamp: Date.now()
         },
@@ -181,7 +181,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       past: [
         ...get().past,
         {
-          pages: JSON.parse(JSON.stringify(pages)),
+          pages: [...pages],
           selectedPageIds: new Set(selectedPageIds),
           timestamp: Date.now()
         }
@@ -320,7 +320,11 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   setPages: (newPages) => {
     // Only push to history if order actually changed
-    if (JSON.stringify(get().pages.map(p => p.id)) !== JSON.stringify(newPages.map(p => p.id))) {
+    const currentPages = get().pages;
+    const changed = currentPages.length !== newPages.length ||
+      currentPages.some((p, i) => p.id !== newPages[i].id);
+
+    if (changed) {
       get().pushToHistory();
     }
     set({ pages: newPages });
@@ -360,6 +364,11 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   }),
 
   clearWorkspace: () => {
+    const { downloadInfo } = get();
+    if (downloadInfo?.url) {
+      URL.revokeObjectURL(downloadInfo.url);
+    }
+
     // Also clear the persistent storage
     clearSession();
     clearSearchCache();
@@ -455,11 +464,17 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   setError: (errorMessage) => set({ errorMessage, status: AppStatus.ERROR }),
   setDownloadInfo: (downloadInfo) => set({ downloadInfo }),
 
-  resetProcessing: () => set({
-    status: AppStatus.IDLE,
-    errorMessage: null,
-    downloadInfo: null
-  }),
+  resetProcessing: () => {
+    const { downloadInfo } = get();
+    if (downloadInfo?.url) {
+      URL.revokeObjectURL(downloadInfo.url);
+    }
+    set({
+      status: AppStatus.IDLE,
+      errorMessage: null,
+      downloadInfo: null
+    });
+  },
 
   setPreviewPageId: (id) => set({ previewPageId: id }),
 
@@ -515,6 +530,8 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 }));
 
 // Automatic sync with IndexedDB
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
 usePdfStore.subscribe(
   (state, prevState) => {
     // Only save if files, pages, or activeTool changed
@@ -523,11 +540,14 @@ usePdfStore.subscribe(
       state.pages !== prevState.pages ||
       state.activeTool !== prevState.activeTool
     ) {
-      if (state.isInitialized) {
+      if (!state.isInitialized) return;
+
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
         import('../services/storageService').then(({ saveSession }) => {
           saveSession(state.files, state.pages, state.activeTool);
         });
-      }
+      }, 400);
     }
   }
 );

@@ -37,13 +37,20 @@ export const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
+let _dbPromise: Promise<IDBDatabase> | null = null;
+
+export const getDB = (): Promise<IDBDatabase> => {
+  if (!_dbPromise) _dbPromise = initDB();
+  return _dbPromise;
+};
+
 /**
  * Saves the current workspace state to IndexedDB.
  * Uses a readwrite transaction to store files and metadata.
  */
 export const saveSession = async (files: Map<string, UploadedFile>, pages: PDFPage[], activeTool: ToolType) => {
   try {
-    const db = await initDB();
+    const db = await getDB();
     const tx = db.transaction([STORE_FILES, STORE_METADATA], 'readwrite');
 
     // Save Files
@@ -84,7 +91,7 @@ export const saveSession = async (files: Map<string, UploadedFile>, pages: PDFPa
  */
 export const loadSession = async (): Promise<WorkspaceState | null> => {
   try {
-    const db = await initDB();
+    const db = await getDB();
     const tx = db.transaction([STORE_FILES, STORE_METADATA], 'readonly');
 
     const filesStore = tx.objectStore(STORE_FILES);
@@ -130,7 +137,7 @@ export const loadSession = async (): Promise<WorkspaceState | null> => {
  */
 export const clearSession = async () => {
   try {
-    const db = await initDB();
+    const db = await getDB();
     const tx = db.transaction([STORE_FILES, STORE_METADATA], 'readwrite');
     tx.objectStore(STORE_FILES).clear();
     tx.objectStore(STORE_METADATA).clear();

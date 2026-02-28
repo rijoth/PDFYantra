@@ -284,3 +284,6 @@ node_modules/
 
 # YoYo AI version control directory
 .yoyo/
+
+# Misc
+small_updates.md

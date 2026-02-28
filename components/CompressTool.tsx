@@ -33,6 +33,20 @@ const CompressTool: React.FC = () => {
     // Results State
     const [results, setResults] = useState<Map<string, CompressionResult>>(new Map());
 
+    const downloadUrls = useMemo(() => {
+        const map = new Map<string, string>();
+        results.forEach((res, id) => {
+            map.set(id, URL.createObjectURL(res.compressedBlob));
+        });
+        return map;
+    }, [results]);
+
+    React.useEffect(() => {
+        return () => {
+            downloadUrls.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [downloadUrls]);
+
     const activeSettings = profile === 'custom' ? customSettings : COMPRESSION_PROFILES[profile];
 
     const filesArray = useMemo(() => Array.from(files.values()) as UploadedFile[], [files]);
@@ -186,7 +200,7 @@ const CompressTool: React.FC = () => {
 
                                 <div className="flex items-center gap-3 w-full md:w-auto">
                                     <a
-                                        href={URL.createObjectURL(res.compressedBlob)}
+                                        href={downloadUrls.get(res.originalFileId)}
                                         download={res.filename}
                                         className="flex-1 md:flex-none h-10 px-4 rounded-full border border-outline/30 text-onSurfaceVariant hover:bg-surfaceVariant flex items-center justify-center gap-2 transition-colors"
                                     >
@@ -213,6 +227,12 @@ const CompressTool: React.FC = () => {
         );
     }
 
+    const pageCountByFile = useMemo(() => {
+        const counts = new Map<string, number>();
+        pages.forEach(p => counts.set(p.fileId, (counts.get(p.fileId) ?? 0) + 1));
+        return counts;
+    }, [pages]);
+
     // --- Main View ---
     return (
         <div className="flex flex-col lg:flex-row gap-8 min-h-full pb-12">
@@ -227,7 +247,7 @@ const CompressTool: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto p-2">
                     {filesArray.map(file => {
-                        const pageCount = pages.filter(p => p.fileId === file.id).length;
+                        const pageCount = pageCountByFile.get(file.id) ?? 0;
                         const isSelected = selectedFileIds.has(file.id);
                         const isProcessing = processingFileId === file.id;
 

@@ -14,6 +14,15 @@ PDFYantra provides a suite of PDF manipulation tools that respect your privacy. 
 *   **Compress:** Reduce PDF file size with adjustable quality settings.
 *   **Privacy First:** Powered by WebAssembly and modern browser APIs to ensure your data never leaves your computer.
 
+## ✨ Recent Updates
+
+*   **Password Protection:** You can now open and unlock password-protected PDF files.
+*   **Memory Efficiency:** Improved memory management by fixing object URL leaks.
+*   **Faster UI:** Optimized state handling for smoother reordering of large documents.
+*   **High-Res Previews:** Faster page previews with a new intelligent document cache.
+*   **Offline Support:** The PDF.js worker is now bundled locally for better privacy.
+*   **Optimized Storage:** Smooth background saving with debounced IndexedDB writes.
+
 ## 🚀 Tech Stack
 
 *   React + TypeScript

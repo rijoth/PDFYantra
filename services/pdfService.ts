@@ -9,9 +9,9 @@ import { parsePageRange } from '../utils/pdfUtils';
 // Configure PDF.js worker
 export const pdfjs = (pdfjsLib as any).default || pdfjsLib;
 
-// Use cdnjs for the worker to ensure a classic script compatible with standard Worker instantiation
-// We use the dynamic version from the imported library to match the worker exactly.
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Use local worker bundled by Vite instead of CDN for better offline support and privacy
+import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url';
+pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 /**
  * Unlocks a password-protected PDF or simply passes it through if not encrypted.
@@ -75,6 +75,10 @@ export const unlockPdfFile = async (
           width: viewport.width,
           height: viewport.height
         });
+
+        // Cleanup
+        canvas.width = 0;
+        canvas.height = 0;
       }
     }
 
@@ -166,6 +170,8 @@ export const generateThumbnails = async (
 
     // Cleanup to free memory
     context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 0;
+    canvas.height = 0;
   }
 
   return pages;
@@ -179,9 +185,8 @@ export const renderPageHighRes = async (
   pageIndex: number,
   rotation: number
 ): Promise<string> => {
-  const fileBuffer = await file.file.arrayBuffer();
-  const loadingTask = pdfjs.getDocument({ data: fileBuffer });
-  const pdf = await loadingTask.promise;
+  const { getCachedDoc } = await import('./pdfCache');
+  const pdf = await getCachedDoc(file);
   const page = await pdf.getPage(pageIndex + 1); // 1-based index
 
   // Calculate viewport with rotation

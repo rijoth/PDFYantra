@@ -62,7 +62,6 @@ export interface CompressionResult {
 export interface SearchMatch {
   pageId: string;
   pageNumber: number; // Visual page number (1-based)
-  text: string; // The full text of the page (or a large chunk)
   snippet: string; // Context around the match
   matchIndex: number; // Index in the full text
 }
