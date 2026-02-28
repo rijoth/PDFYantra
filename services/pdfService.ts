@@ -443,7 +443,14 @@ export const compressPdfFile = async (
 
     // Convert to image
     const imgData = canvas.toDataURL('image/jpeg', quality);
-    const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+    // Direct base64 to ArrayBuffer conversion is more robust than fetch() for local data URLs
+    const base64Data = imgData.split(',')[1];
+    const binaryString = atob(base64Data);
+    const len = binaryString.length;
+    const imgBytes = new Uint8Array(len);
+    for (let j = 0; j < len; j++) {
+      imgBytes[j] = binaryString.charCodeAt(j);
+    }
 
     // Embed in new PDF
     const jpgImage = await newPdf.embedJpg(imgBytes);

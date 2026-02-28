@@ -4,7 +4,8 @@ import { usePdfStore } from '../store/usePdfStore';
 import { AppStatus } from '../types';
 
 const ProcessingOverlay: React.FC = () => {
-    const { status, processingProgress, processingMessage } = usePdfStore();
+    const { status, processingProgress: rawProgress, processingMessage } = usePdfStore();
+    const processingProgress = isFinite(rawProgress) ? Math.min(100, Math.max(0, rawProgress)) : 0;
 
     if (status !== AppStatus.PROCESSING) {
         return null;

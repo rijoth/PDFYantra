@@ -13,7 +13,7 @@ const COMPRESSION_PROFILES: Record<string, CompressionSettings> = {
 const CompressTool: React.FC = () => {
     const {
         files, pages, addFilesAndPages, replaceFileContent, setStatus,
-        setError, status, setProcessingMessage, setProcessingProgress
+        setError, status, setProcessingMessage, setProcessingProgress, errorMessage
     } = usePdfStore();
 
     // Selection State
@@ -32,6 +32,7 @@ const CompressTool: React.FC = () => {
 
     // Results State
     const [results, setResults] = useState<Map<string, CompressionResult>>(new Map());
+    const [isSuccess, setIsSuccess] = useState(false);
 
     const downloadUrls = useMemo(() => {
         const map = new Map<string, string>();
@@ -50,6 +51,12 @@ const CompressTool: React.FC = () => {
     const activeSettings = profile === 'custom' ? customSettings : COMPRESSION_PROFILES[profile];
 
     const filesArray = useMemo(() => Array.from(files.values()) as UploadedFile[], [files]);
+
+    const pageCountByFile = useMemo(() => {
+        const counts = new Map<string, number>();
+        pages.forEach(p => counts.set(p.fileId, (counts.get(p.fileId) ?? 0) + 1));
+        return counts;
+    }, [pages]);
 
     const toggleFile = (id: string) => {
         const next = new Set(selectedFileIds);
@@ -96,11 +103,13 @@ const CompressTool: React.FC = () => {
             }
 
             setResults(newResults);
+            setIsSuccess(true);
             setStatus(AppStatus.SUCCESS);
             setProcessingMessage(null);
             setProcessingProgress(0);
         } catch (err: any) {
             console.error(err);
+            setIsSuccess(false);
             setError("Compression failed. " + err.message);
             setProcessingMessage(null);
         } finally {
@@ -158,7 +167,7 @@ const CompressTool: React.FC = () => {
     }
 
     // --- Success View (Results) ---
-    if (status === AppStatus.SUCCESS && results.size > 0) {
+    if (isSuccess && results.size > 0 && status === AppStatus.SUCCESS) {
         return (
             <div className="max-w-4xl mx-auto h-full flex flex-col pb-20">
                 <div className="mb-6 flex items-center justify-between">
@@ -227,11 +236,7 @@ const CompressTool: React.FC = () => {
         );
     }
 
-    const pageCountByFile = useMemo(() => {
-        const counts = new Map<string, number>();
-        pages.forEach(p => counts.set(p.fileId, (counts.get(p.fileId) ?? 0) + 1));
-        return counts;
-    }, [pages]);
+
 
     // --- Main View ---
     return (
@@ -297,6 +302,16 @@ const CompressTool: React.FC = () => {
 
             {/* Right: Settings */}
             <div className="w-full lg:w-[320px] flex flex-col gap-6">
+                {errorMessage && status === AppStatus.ERROR && (
+                    <div className="mb-6 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm flex items-start gap-3 animate-fade-in">
+                        <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
+                        <div className="flex-1">
+                            <p className="font-bold mb-0.5">Compression Failed</p>
+                            <p className="opacity-80">{errorMessage}</p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="bg-surface rounded-md3 p-6 border border-surfaceVariant">
                     <h3 className="text-lg font-display text-onSurfaceVariant mb-4">Compression Settings</h3>
 
