@@ -98,14 +98,17 @@ export const unlockPdfFile = async (
 /**
  * Handles the retry loop for unlocking a PDF that may be encrypted.
  */
+const MAX_PASSWORD_RETRIES = 5;
+
 export const processFileWithPassword = async (
   file: File,
   promptForPassword: (filename: string, isRetry: boolean) => Promise<string | null>
 ): Promise<File | null> => {
   let currentPassword = undefined;
-  let isRetry = false;
+  let attempts = 0;
 
-  while (true) {
+  while (attempts < MAX_PASSWORD_RETRIES) {
+    attempts++;
     const result = await unlockPdfFile(file, currentPassword);
     if (result.success && result.file) {
       return result.file;
@@ -117,11 +120,12 @@ export const processFileWithPassword = async (
         return null;
       }
       currentPassword = pwd;
-      isRetry = true;
     } else {
       throw new Error(`Failed to process ${file.name}`);
     }
   }
+
+  throw new Error(`Too many failed attempts to unlock ${file.name}`);
 };
 
 /**

@@ -15,7 +15,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFiles = async (rawFiles: File[]) => {
+    const handleFiles = useCallback(async (rawFiles: File[]) => {
         setIsProcessing(true);
         const startColorIdx = files.size % FILE_COLORS.length;
         const newUploadedFiles: UploadedFile[] = [];
@@ -58,7 +58,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         } finally {
             setIsProcessing(false);
         }
-    };
+    }, [files, addFilesAndPages, onNavigate, promptForPassword, setError]);
 
     const onDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -66,7 +66,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         if (e.dataTransfer.files?.length) {
             handleFiles(Array.from(e.dataTransfer.files));
         }
-    }, [files, addFilesAndPages, onNavigate]);
+    }, [handleFiles]);
 
     return (
         <div className="max-w-5xl mx-auto py-2">

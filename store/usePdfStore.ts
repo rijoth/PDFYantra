@@ -19,6 +19,7 @@ interface PdfState {
   downloadInfo: ProcessingResult | null;
   isInitialized: boolean;
   previewPageId: string | null;
+  previewUrl: string | null;
   hasRecoveredSession: boolean;
 
   // --- History State ---
@@ -70,6 +71,7 @@ interface PdfState {
 
   // Preview
   setPreviewPageId: (id: string | null) => void;
+  setPreviewUrl: (url: string | null) => void;
 
   // Search
   performSearch: (query: string) => Promise<void>;
@@ -106,6 +108,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   downloadInfo: null,
   isInitialized: false,
   previewPageId: null,
+  previewUrl: null,
   hasRecoveredSession: false,
 
   // Search Initial State
@@ -364,9 +367,13 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   }),
 
   clearWorkspace: () => {
-    const { downloadInfo } = get();
+    const { downloadInfo, previewUrl } = get();
     if (downloadInfo?.url) {
       URL.revokeObjectURL(downloadInfo.url);
+    }
+    // Revoke any active high-res preview blob URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
     }
 
     // Also clear the persistent storage
@@ -381,6 +388,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       errorMessage: null,
       downloadInfo: null,
       previewPageId: null,
+      previewUrl: null,
       searchQuery: '',
       searchResults: []
     });
@@ -477,6 +485,15 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   },
 
   setPreviewPageId: (id) => set({ previewPageId: id }),
+
+  setPreviewUrl: (url) => {
+    const { previewUrl: oldUrl } = get();
+    // Revoke the previous preview URL to prevent memory leaks
+    if (oldUrl && oldUrl !== url) {
+      URL.revokeObjectURL(oldUrl);
+    }
+    set({ previewUrl: url });
+  },
 
   // --- Search Logic ---
 

@@ -3,12 +3,13 @@ import { usePdfStore } from '../store/usePdfStore';
 import { renderPageHighRes } from '../services/pdfService';
 
 const PagePreview: React.FC = () => {
-  const { previewPageId, setPreviewPageId, pages, files } = usePdfStore();
+  const { previewPageId, setPreviewPageId, setPreviewUrl, pages, files } = usePdfStore();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageUrlRef = useRef<string | null>(null);
 
   const currentPageIndex = pages.findIndex(p => p.id === previewPageId);
   const page = pages[currentPageIndex];
@@ -22,12 +23,14 @@ const PagePreview: React.FC = () => {
 
       setLoading(true);
       // Revoke previous URL to avoid memory leaks
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
+      if (imageUrlRef.current) URL.revokeObjectURL(imageUrlRef.current);
       
       try {
         // We pass the rotation stored in the page model to render it 'as is' in the workspace
         const url = await renderPageHighRes(file, page.pageIndex, page.rotation);
         setImageUrl(url);
+        imageUrlRef.current = url;
+        setPreviewUrl(url); // Track in store for clearWorkspace cleanup
         setRotation(page.rotation);
         setZoom(1); // Reset zoom on page change
       } catch (err) {
@@ -41,9 +44,13 @@ const PagePreview: React.FC = () => {
       loadPreview();
     }
     
-    // Cleanup on unmount
+    // Cleanup on unmount — uses ref to always have the latest URL
     return () => {
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
+      }
+      setPreviewUrl(null); // Clear store tracking
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewPageId, page?.rotation]); // Reload if rotation changes in workspace
