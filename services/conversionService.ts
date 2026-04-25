@@ -273,6 +273,12 @@ export const convertFromPdf = async (
         await page.render({ canvasContext: context, viewport }).promise;
         
         const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, mime, 0.8));
+        
+        // Cleanup canvas to free memory
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.width = 0;
+        canvas.height = 0;
+
         if (!blob) throw new Error("Failed to create image blob");
 
         return { 
@@ -300,6 +306,11 @@ export const convertFromPdf = async (
         
         const dataUrl = canvas.toDataURL(mime, 0.8);
         const base64Data = dataUrl.split(',')[1];
+        
+        // Cleanup canvas to free memory
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.width = 0;
+        canvas.height = 0;
         
         const fileName = `page_${i + 1}_${pageMeta.pageNumber}.${format}`;
         zip.file(fileName, base64Data, { base64: true });

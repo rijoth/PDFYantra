@@ -143,7 +143,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
           selectedPageIds: new Set(state.selectedPageIds),
           timestamp: Date.now()
         }
-      ].slice(-50), // Keep last 50 actions
+      ].slice(-15), // Keep last 15 actions to cap memory
       future: [] // New action clears future
     }));
   },
@@ -301,10 +301,23 @@ export const usePdfStore = create<PdfState>((set, get) => ({
         .filter(p => p.fileId === fileId)
         .forEach(p => nextSelected.delete(p.id));
 
+      // Trim history entries that reference the deleted fileId
+      const trimHistory = (entries: typeof state.past) => 
+        entries.map(entry => ({
+          ...entry,
+          pages: entry.pages.filter(p => p.fileId !== fileId),
+          selectedPageIds: new Set([...entry.selectedPageIds].filter(id => {
+            const page = entry.pages.find(p => p.id === id);
+            return page && page.fileId !== fileId;
+          }))
+        }));
+
       return {
         files: nextFiles,
         pages: nextPages,
-        selectedPageIds: nextSelected
+        selectedPageIds: nextSelected,
+        past: trimHistory(state.past),
+        future: trimHistory(state.future)
       };
     });
   },
