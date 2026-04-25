@@ -80,54 +80,59 @@ export const searchWorkspace = async (
   const normalizedQuery = query.toLowerCase();
 
   let processedCount = 0;
+  const batchSize = 5;
 
-  // Iterate over all pages in the workspace
-  // We process sequentially to be nice to the main thread, 
-  // though pdfjs uses a worker, the text assembly is here.
-  for (const page of pages) {
-    const file = files.get(page.fileId);
-    if (!file) continue;
+  for (let i = 0; i < pages.length; i += batchSize) {
+    const batch = pages.slice(i, i + batchSize);
+    
+    await Promise.all(batch.map(async (page) => {
+      const file = files.get(page.fileId);
+      if (!file) return;
 
-    try {
-      const text = await getPageText(file, page.pageIndex);
-      const normalizedText = text.toLowerCase();
+      try {
+        const text = await getPageText(file, page.pageIndex);
+        const normalizedText = text.toLowerCase();
 
-      // Find all occurrences
-      let matchIndex = normalizedText.indexOf(normalizedQuery);
+        // Find all occurrences
+        let matchIndex = normalizedText.indexOf(normalizedQuery);
 
-      while (matchIndex !== -1) {
-        // We found a match!
+        while (matchIndex !== -1) {
+          // We found a match!
 
-        // Initialize result group if needed
-        if (!resultsMap.has(file.id)) {
-          resultsMap.set(file.id, {
-            fileId: file.id,
-            fileName: file.name,
-            fileColor: file.color,
-            matches: []
+          // Initialize result group if needed
+          if (!resultsMap.has(file.id)) {
+            resultsMap.set(file.id, {
+              fileId: file.id,
+              fileName: file.name,
+              fileColor: file.color,
+              matches: []
+            });
+          }
+
+          // Create match object
+          // Use the Original Text for the snippet to preserve Case
+          const snippet = getSnippet(text, matchIndex, normalizedQuery.length);
+
+          resultsMap.get(file.id)!.matches.push({
+            pageId: page.id,
+            pageNumber: page.pageNumber,
+            matchIndex: matchIndex,
+            snippet: snippet
           });
+
+          // Find next occurrence in this page
+          matchIndex = normalizedText.indexOf(normalizedQuery, matchIndex + 1);
         }
-
-        // Create match object
-        // Use the Original Text for the snippet to preserve Case
-        const snippet = getSnippet(text, matchIndex, normalizedQuery.length);
-
-        resultsMap.get(file.id)!.matches.push({
-          pageId: page.id,
-          pageNumber: page.pageNumber,
-          matchIndex: matchIndex,
-          snippet: snippet
-        });
-
-        // Find next occurrence in this page
-        matchIndex = normalizedText.indexOf(normalizedQuery, matchIndex + 1);
+      } catch (err) {
+        console.error(`Error searching page ${page.pageNumber} of ${file.name}`, err);
       }
-    } catch (err) {
-      console.error(`Error searching page ${page.pageNumber} of ${file.name}`, err);
-    }
+    }));
 
-    processedCount++;
-    if (onProgress) onProgress(processedCount, pages.length);
+    processedCount += batch.length;
+    if (onProgress) onProgress(Math.min(processedCount, pages.length), pages.length);
+
+    // Yield to main thread
+    await new Promise(resolve => setTimeout(resolve, 0));
   }
 
   return Array.from(resultsMap.values());

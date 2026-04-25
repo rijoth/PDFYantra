@@ -2,6 +2,21 @@ import { pdfjs } from './pdfService';
 import { UploadedFile } from '../types';
 
 /**
+ * In-memory cache for file ArrayBuffers.
+ * Uses WeakMap so it cleans up automatically when the File object is garbage collected.
+ */
+const bufferCache = new WeakMap<File, ArrayBuffer>();
+
+export const getFileBuffer = async (file: File): Promise<ArrayBuffer> => {
+    let buffer = bufferCache.get(file);
+    if (!buffer) {
+        buffer = await file.arrayBuffer();
+        bufferCache.set(file, buffer);
+    }
+    return buffer;
+};
+
+/**
  * In-memory cache for parsed PDF documents to avoid reloading the blob.
  * Key: fileId
  * Value: PDFDocumentProxy
@@ -15,13 +30,13 @@ const docCache = new Map<string, any>();
 export const getCachedDoc = async (file: UploadedFile): Promise<any> => {
     let pdf = docCache.get(file.id);
     if (!pdf) {
-        const buffer = await file.file.arrayBuffer();
+        const buffer = await getFileBuffer(file.file);
         // Using the worker-configured pdfjs instance from pdfService
         const loadingTask = pdfjs.getDocument({ data: buffer });
         pdf = await loadingTask.promise;
 
         // LRU: If cache is getting full, remove oldest entry
-        if (docCache.size >= 3) {
+        if (docCache.size >= 10) {
             const [firstKey] = docCache.keys();
             const oldestDoc = docCache.get(firstKey);
             if (oldestDoc) {

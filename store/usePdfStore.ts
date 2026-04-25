@@ -380,7 +380,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   }),
 
   clearWorkspace: () => {
-    const { downloadInfo, previewUrl } = get();
+    const { downloadInfo, previewUrl, pages } = get();
     if (downloadInfo?.url) {
       URL.revokeObjectURL(downloadInfo.url);
     }
@@ -388,6 +388,12 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
+    // Revoke thumbnail blob URLs
+    pages.forEach(p => {
+      if (p.thumbnailUrl && p.thumbnailUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(p.thumbnailUrl);
+      }
+    });
 
     // Also clear the persistent storage
     clearSession();

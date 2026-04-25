@@ -5,6 +5,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import { UploadedFile, PDFPage, SplitConfig } from '../types';
 import { parsePageRange } from '../utils/pdfUtils';
+import { getFileBuffer } from './pdfCache';
 
 // Configure PDF.js worker
 export const pdfjs = (pdfjsLib as any).default || pdfjsLib;
@@ -22,7 +23,7 @@ export const unlockPdfFile = async (
 ): Promise<{ success: boolean; file?: File; needsPassword?: boolean; wrongPassword?: boolean }> => {
   // 1. Try pdf-lib first to see if it's unencrypted or if we can open it directly.
   try {
-    const fileBuffer = await file.arrayBuffer();
+    const fileBuffer = await getFileBuffer(file);
     await PDFDocument.load(fileBuffer);
     // If it works, we don't need to do anything else.
     return { success: true, file };
@@ -40,7 +41,7 @@ export const unlockPdfFile = async (
   // 2. If we're here, it's encrypted. Use pdf.js to unlock it for rasterization.
   // We get a fresh buffer because the previous one might have been detached by some browser implementations
   // when converted to ArrayBuffer, though usually it's pdfjs.getDocument({ data: ... }) that detaches it.
-  const fileBufferForJs = await file.arrayBuffer();
+  const fileBufferForJs = await getFileBuffer(file);
 
   try {
     const loadingTask = pdfjs.getDocument({ data: fileBufferForJs, password });
@@ -135,7 +136,7 @@ export const generateThumbnails = async (
   file: UploadedFile,
   onProgress?: (current: number, total: number) => void
 ): Promise<PDFPage[]> => {
-  const fileBuffer = await file.file.arrayBuffer();
+  const fileBuffer = await getFileBuffer(file.file);
 
   // Load using pdf.js for rendering
   const loadingTask = pdfjs.getDocument({ data: fileBuffer });
@@ -163,12 +164,22 @@ export const generateThumbnails = async (
       viewport: viewport,
     }).promise;
 
+    const thumbnailUrl = await new Promise<string>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(URL.createObjectURL(blob));
+        } else {
+          resolve('');
+        }
+      }, 'image/jpeg', 0.7);
+    });
+
     pages.push({
       id: `${file.id}-page-${i}-${Math.random().toString(36).substr(2, 5)}`,
       fileId: file.id,
       pageIndex: i - 1, // 0-based for pdf-lib
       pageNumber: i,    // 1-based for display
-      thumbnailUrl: canvas.toDataURL('image/jpeg', 0.7),
+      thumbnailUrl,
       rotation: 0,
     });
 
@@ -176,6 +187,11 @@ export const generateThumbnails = async (
     context.clearRect(0, 0, canvas.width, canvas.height);
     canvas.width = 0;
     canvas.height = 0;
+
+    // Yield to the main thread to prevent UI freezing
+    if (i % 3 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
   }
 
   return pages;
@@ -248,7 +264,7 @@ export const mergePages = async (
       let sourceDoc = loadedDocs.get(page.fileId);
 
       if (!sourceDoc) {
-        const fileBuffer = await file.file.arrayBuffer();
+        const fileBuffer = await getFileBuffer(file.file);
         sourceDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
         loadedDocs.set(page.fileId, sourceDoc);
       }
@@ -341,7 +357,7 @@ export const splitWorkspace = async (
 
       let sourceDoc = loadedDocs.get(pageMeta.fileId);
       if (!sourceDoc) {
-        const fileBuffer = await file.file.arrayBuffer();
+        const fileBuffer = await getFileBuffer(file.file);
         sourceDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
         loadedDocs.set(pageMeta.fileId, sourceDoc);
       }
@@ -413,7 +429,7 @@ export const compressPdfFile = async (
   scale: number,   // e.g. 1.0 = 72dpi, 2.0 = 144dpi
   onProgress: (current: number, total: number) => void
 ): Promise<{ blob: Blob; filename: string }> => {
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = await getFileBuffer(file);
   let doc;
 
   try {

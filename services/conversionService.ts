@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { UploadedFile, PDFPage, ConvertFormat } from '../types';
 import { pdfjs } from './pdfService';
+import { getFileBuffer } from './pdfCache';
 
 /**
  * Helper to create a hidden container for DOM rendering
@@ -60,7 +61,7 @@ export const convertToPdf = async (files: File[]): Promise<{ pdfBytes: Uint8Arra
 
 const convertImageToPdf = async (file: File) => {
   const pdfDoc = await PDFDocument.create();
-  const buffer = await file.arrayBuffer();
+  const buffer = await getFileBuffer(file);
   let image;
   
   if (file.type === 'image/png') {
@@ -153,7 +154,7 @@ const convertHtmlToPdf = async (file: File) => {
 };
 
 const convertDocxToPdf = async (file: File) => {
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = await getFileBuffer(file);
   const result = await mammoth.convertToHtml({ arrayBuffer });
   
   const container = createHiddenContainer();
@@ -178,7 +179,7 @@ const convertDocxToPdf = async (file: File) => {
 };
 
 const convertXlsxToPdf = async (file: File) => {
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = await getFileBuffer(file);
   const workbook = XLSX.read(arrayBuffer);
   const sheetName = workbook.SheetNames[0];
   const html = XLSX.utils.sheet_to_html(workbook.Sheets[sheetName]);
@@ -218,7 +219,7 @@ export const convertFromPdf = async (
     if (docCache.has(fileId)) return docCache.get(fileId);
     const file = fileMap.get(fileId);
     if (!file) throw new Error("File not found");
-    const buffer = await file.file.arrayBuffer();
+    const buffer = await getFileBuffer(file.file);
     const doc = await pdfjs.getDocument({ data: buffer }).promise;
     docCache.set(fileId, doc);
     return doc;
