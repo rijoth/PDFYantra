@@ -52,6 +52,7 @@ const App: React.FC = () => {
         if (session) {
           restoreSession(session.files, session.pages, session.activeTool);
           if (session.pages.length > 0) {
+            await usePdfStore.getState().regenerateAllThumbnails();
             usePdfStore.getState().setHasRecoveredSession(true);
           }
         }

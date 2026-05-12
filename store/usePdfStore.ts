@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile, SearchResult, HistoryEntry } from '../types';
 import { clearSession } from '../services/storageService';
-import { generateThumbnails } from '../services/pdfService';
+import { generateThumbnails, regenerateThumbnailsForFile } from '../services/pdfService';
 import { searchWorkspace, clearSearchCache } from '../services/searchService';
 
 interface PdfState {
@@ -87,6 +87,9 @@ interface PdfState {
   pushToHistory: () => void;
   lockHistory: () => void;
   unlockHistory: () => void;
+
+  // Session Recovery
+  regenerateAllThumbnails: () => Promise<void>;
 
   // Duplication
   duplicateSelectedPages: () => void;
@@ -344,6 +347,48 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       get().pushToHistory();
     }
     set({ pages: newPages });
+  },
+
+  regenerateAllThumbnails: async () => {
+    const { files, pages } = get();
+    if (files.size === 0) return;
+
+    set({ status: AppStatus.PROCESSING });
+
+    let fileIdx = 0;
+    for (const [fileId, file] of files) {
+      set({
+        processingMessage: `Recovering thumbnails... (${fileIdx + 1}/${files.size})`,
+        processingProgress: 0
+      });
+
+      try {
+        const thumbnails = await regenerateThumbnailsForFile(file, (curr, total) => {
+          set({ processingProgress: Math.round((curr / total) * 100) });
+        });
+
+        set((state) => ({
+          pages: state.pages.map(p => {
+            if (p.fileId === fileId) {
+              const newThumbnail = thumbnails.get(p.pageIndex);
+              if (newThumbnail) {
+                if (p.thumbnailUrl && p.thumbnailUrl.startsWith('blob:')) {
+                  URL.revokeObjectURL(p.thumbnailUrl);
+                }
+                return { ...p, thumbnailUrl: newThumbnail };
+              }
+            }
+            return p;
+          })
+        }));
+      } catch (err) {
+        console.error(`Failed to regenerate thumbnails for ${file.name}`, err);
+      }
+
+      fileIdx++;
+    }
+
+    set({ status: AppStatus.IDLE, processingMessage: null, processingProgress: 0 });
   },
 
   duplicateSelectedPages: () => {

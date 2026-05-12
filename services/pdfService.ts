@@ -196,6 +196,66 @@ export const generateThumbnails = async (
 };
 
 /**
+ * Regenerates thumbnail blob URLs for a single file.
+ * Returns a Map<pageIndex, thumbnailUrl> to allow mapping back
+ * to existing page objects without losing their IDs/rotation.
+ */
+export const regenerateThumbnailsForFile = async (
+  file: UploadedFile,
+  onProgress?: (current: number, total: number) => void
+): Promise<Map<number, string>> => {
+  const result = new Map<number, string>();
+  const fileBuffer = await getFileBuffer(file.file);
+
+  const loadingTask = pdfjs.getDocument({ data: fileBuffer });
+  const pdf = await loadingTask.promise;
+
+  const scale = pdf.numPages > 50 ? 0.3 : 0.5;
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    if (onProgress) onProgress(i, pdf.numPages);
+
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) continue;
+
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({
+      canvasContext: context,
+      viewport: viewport,
+    }).promise;
+
+    const thumbnailUrl = await new Promise<string>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(URL.createObjectURL(blob));
+        } else {
+          resolve('');
+        }
+      }, 'image/jpeg', 0.7);
+    });
+
+    result.set(i - 1, thumbnailUrl);
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 0;
+    canvas.height = 0;
+
+    if (i % 3 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+
+  return result;
+};
+
+/**
  * Renders a specific page to a Blob URL for high-res preview.
  */
 export const renderPageHighRes = async (
