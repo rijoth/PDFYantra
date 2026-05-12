@@ -39,8 +39,6 @@ export const unlockPdfFile = async (
   }
 
   // 2. If we're here, it's encrypted. Use pdf.js to unlock it for rasterization.
-  // We get a fresh buffer because the previous one might have been detached by some browser implementations
-  // when converted to ArrayBuffer, though usually it's pdfjs.getDocument({ data: ... }) that detaches it.
   const fileBufferForJs = await getFileBuffer(file);
 
   try {

@@ -1,19 +1,8 @@
 import { pdfjs } from './pdfService';
 import { UploadedFile } from '../types';
 
-/**
- * In-memory cache for file ArrayBuffers.
- * Uses WeakMap so it cleans up automatically when the File object is garbage collected.
- */
-const bufferCache = new WeakMap<File, ArrayBuffer>();
-
 export const getFileBuffer = async (file: File): Promise<ArrayBuffer> => {
-    let buffer = bufferCache.get(file);
-    if (!buffer) {
-        buffer = await file.arrayBuffer();
-        bufferCache.set(file, buffer);
-    }
-    return buffer;
+    return await file.arrayBuffer();
 };
 
 /**
