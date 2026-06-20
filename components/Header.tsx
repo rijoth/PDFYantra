@@ -2,9 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 
 const TopAppBar: React.FC = () => {
-  const { files, pages, clearWorkspace } = usePdfStore();
-  const fileCount = files.size;
-  const pageCount = pages.length;
+  // Scoped selectors: primitives only re-render when these actually change,
+  // instead of subscribing to the entire store (e.g. progress ticks).
+  const fileCount = usePdfStore(s => s.files.size);
+  const pageCount = usePdfStore(s => s.pages.length);
+  const clearWorkspace = usePdfStore(s => s.clearWorkspace);
+
+  // Subscribe to history slices so buttons update reactively
+  // (usePdfStore.getState() in JSX is a non-reactive snapshot).
+  const pastLen = usePdfStore(s => s.past.length);
+  const futureLen = usePdfStore(s => s.future.length);
+  const isHistoryLocked = usePdfStore(s => s.isHistoryLocked);
+  const undo = usePdfStore(s => s.undo);
+  const redo = usePdfStore(s => s.redo);
 
   const [isDark, setIsDark] = useState(false);
 
@@ -88,16 +98,16 @@ const TopAppBar: React.FC = () => {
         <div className="hidden md:flex items-center mr-4 animate-fade-in flex-shrink-0 gap-3">
           <div className="flex items-center bg-surfaceVariant/30 rounded-full p-1 border border-outline/10">
             <button
-              onClick={() => usePdfStore.getState().undo()}
-              disabled={usePdfStore.getState().past.length === 0 || usePdfStore.getState().isHistoryLocked}
+              onClick={() => undo()}
+              disabled={pastLen === 0 || isHistoryLocked}
               className="w-8 h-8 rounded-full flex items-center justify-center text-onSurfaceVariant hover:bg-surfaceVariant disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               title="Undo (Ctrl+Z)"
             >
               <i className="fa-solid fa-rotate-left text-sm"></i>
             </button>
             <button
-              onClick={() => usePdfStore.getState().redo()}
-              disabled={usePdfStore.getState().future.length === 0 || usePdfStore.getState().isHistoryLocked}
+              onClick={() => redo()}
+              disabled={futureLen === 0 || isHistoryLocked}
               className="w-8 h-8 rounded-full flex items-center justify-center text-onSurfaceVariant hover:bg-surfaceVariant disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               title="Redo (Ctrl+Y)"
             >

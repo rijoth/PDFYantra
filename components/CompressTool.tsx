@@ -34,19 +34,33 @@ const CompressTool: React.FC = () => {
     const [results, setResults] = useState<Map<string, CompressionResult>>(new Map());
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const downloadUrls = useMemo(() => {
-        const map = new Map<string, string>();
-        results.forEach((res, id) => {
-            map.set(id, URL.createObjectURL(res.compressedBlob));
-        });
-        return map;
-    }, [results]);
+    // Lazily-created, cached object URLs for compressed blobs.
+    // Keyed by originalFileId so we never recreate a URL for the same result
+    // (the previous useMemo approach recreated every URL on each results change,
+    //  churning memory and racing the DOM).
+    const urlCacheRef = React.useRef<Map<string, string>>(new Map());
+    const getUrl = React.useCallback((id: string, blob: Blob): string => {
+        let url = urlCacheRef.current.get(id);
+        if (!url) {
+            url = URL.createObjectURL(blob);
+            urlCacheRef.current.set(id, url);
+        }
+        return url;
+    }, []);
+    const revokeUrl = React.useCallback((id: string) => {
+        const url = urlCacheRef.current.get(id);
+        if (url) {
+            URL.revokeObjectURL(url);
+            urlCacheRef.current.delete(id);
+        }
+    }, []);
 
     React.useEffect(() => {
         return () => {
-            downloadUrls.forEach(url => URL.revokeObjectURL(url));
+            urlCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+            urlCacheRef.current.clear();
         };
-    }, [downloadUrls]);
+    }, []);
 
     const activeSettings = profile === 'custom' ? customSettings : COMPRESSION_PROFILES[profile];
 
@@ -112,6 +126,9 @@ const CompressTool: React.FC = () => {
             setIsSuccess(false);
             setError("Compression failed. " + err.message);
             setProcessingMessage(null);
+            // Revoke any URLs created before failure
+            urlCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+            urlCacheRef.current.clear();
         } finally {
             setProcessingFileId(null);
         }
@@ -120,6 +137,7 @@ const CompressTool: React.FC = () => {
     const handleReplace = async (result: CompressionResult) => {
         await replaceFileContent(result.originalFileId, result.compressedBlob, result.filename);
         // Remove from results to indicate action taken
+        revokeUrl(result.originalFileId);
         const nextResults = new Map(results);
         nextResults.delete(result.originalFileId);
         setResults(nextResults);
@@ -144,6 +162,7 @@ const CompressTool: React.FC = () => {
             const extractedPages = await generateThumbnails(newUploadedFile);
             addFilesAndPages([newUploadedFile], extractedPages);
 
+            revokeUrl(result.originalFileId);
             const nextResults = new Map(results);
             nextResults.delete(result.originalFileId);
             setResults(nextResults);
@@ -209,7 +228,7 @@ const CompressTool: React.FC = () => {
 
                                 <div className="flex items-center gap-3 w-full md:w-auto">
                                     <a
-                                        href={downloadUrls.get(res.originalFileId)}
+                                        href={getUrl(res.originalFileId, res.compressedBlob)}
                                         download={res.filename}
                                         className="flex-1 md:flex-none h-10 px-4 rounded-full border border-outline/30 text-onSurfaceVariant hover:bg-surfaceVariant flex items-center justify-center gap-2 transition-colors"
                                     >

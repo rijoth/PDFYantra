@@ -40,12 +40,20 @@ const ConvertTool: React.FC = () => {
         size: number;
     }[]>([]);
 
-    // Cleanup object URLs on unmount or change
+    // Track every object URL we create so we only revoke on unmount
+    // (revoking on every list change would break still-displayed download links).
+    const urlsRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        convertedFiles.forEach(f => urlsRef.current.add(f.url));
+    }, [convertedFiles]);
+
     useEffect(() => {
         return () => {
-            convertedFiles.forEach(f => URL.revokeObjectURL(f.url));
+            urlsRef.current.forEach(u => URL.revokeObjectURL(u));
+            urlsRef.current.clear();
         };
-    }, [convertedFiles]);
+    }, []);
 
     // Determine available files that actually have pages in the workspace
     const availableFiles = useMemo(() => {
@@ -441,7 +449,13 @@ const ConvertTool: React.FC = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-medium text-onSurfaceVariant">Converted Files</h3>
                                     <button
-                                        onClick={() => setConvertedFiles([])}
+                                        onClick={() => {
+                                            convertedFiles.forEach(f => {
+                                                URL.revokeObjectURL(f.url);
+                                                urlsRef.current.delete(f.url);
+                                            });
+                                            setConvertedFiles([]);
+                                        }}
                                         className="text-sm text-primary hover:text-primary/80 font-medium"
                                     >
                                         Clear List

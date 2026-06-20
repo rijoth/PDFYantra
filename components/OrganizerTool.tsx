@@ -168,6 +168,9 @@ const OrganizerTool: React.FC = () => {
                 setStatus(AppStatus.SUCCESS);
                 setProcessingMessage(null);
                 setProcessingProgress(0);
+                // Unlock history once the operation is done so undo/redo works
+                // again even if the user navigates away from the success view.
+                unlockHistory();
             } catch (err: any) {
                 setError(err.message);
                 setProcessingMessage(null);

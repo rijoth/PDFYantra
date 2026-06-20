@@ -27,6 +27,50 @@ const createHiddenContainer = () => {
 };
 
 /**
+ * Sanitizes untrusted HTML before injecting it into the app's DOM.
+ *
+ * html2canvas does not execute <script>, but inline event handlers (onclick,
+ * onerror, ...), javascript: URIs, and active elements (<iframe>, <embed>,
+ * <object>, <form>) still run in this app's origin. This neutralizes those
+ * vectors by parsing to a DOM, stripping disallowed elements/attributes, and
+ * re-serializing. It is a pragmatic defense-in-depth layer; for full coverage
+ * prefer DOMPurify, which is not currently a dependency.
+ */
+const sanitizeHtml = (html: string): string => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  // Remove disallowed active elements entirely.
+  const stripTags = ['script', 'iframe', 'object', 'embed', 'form', 'link', 'meta', 'base'];
+  stripTags.forEach(tag => {
+    doc.querySelectorAll(tag).forEach(el => el.remove());
+  });
+
+  // Strip inline event handlers and dangerous attributes.
+  doc.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.trim().toLowerCase();
+      if (name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      } else if ((name === 'href' || name === 'src' || name === 'xlink:href') &&
+        (value.startsWith('javascript:') || value.startsWith('data:text/html'))) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+
+  // Drop style values that pull in scripts/active content via CSS.
+  doc.querySelectorAll('[style]').forEach(el => {
+    const style = el.getAttribute('style') || '';
+    if (/expression\(|javascript:|url\s*\(\s*['"]?javascript:/i.test(style)) {
+      el.setAttribute('style', style.replace(/expression\(|javascript:|url\s*\(\s*['"]?javascript:/gi, ''));
+    }
+  });
+
+  return doc.body ? doc.body.innerHTML : '';
+};
+
+/**
  * CONVERT TO PDF
  * Supports: Images, Text, HTML, DOCX, XLSX
  */
@@ -63,12 +107,48 @@ const convertImageToPdf = async (file: File) => {
   const pdfDoc = await PDFDocument.create();
   const buffer = await getFileBuffer(file);
   let image;
-  
-  if (file.type === 'image/png') {
+
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  const isPng = file.type === 'image/png' || ext === 'png';
+
+  if (isPng) {
     image = await pdfDoc.embedPng(buffer);
-  } else {
-    // Fallback for jpeg/webp
+  } else if (file.type === 'image/jpeg' || ext === 'jpg' || ext === 'jpeg') {
     image = await pdfDoc.embedJpg(buffer);
+  } else {
+    // WebP, GIF, BMP, AVIF, etc. are not supported by pdf-lib directly.
+    // Rasterize via canvas to PNG bytes, then embed.
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error(`Failed to load image: ${file.name}`));
+        el.src = objectUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context failed for image conversion');
+      ctx.drawImage(img, 0, 0);
+
+      const pngBlob = await new Promise<Blob | null>(resolve =>
+        canvas.toBlob(resolve, 'image/png')
+      );
+      if (!pngBlob) throw new Error('Failed to rasterize image to PNG');
+
+      const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
+      image = await pdfDoc.embedPng(pngBytes);
+
+      // Cleanup
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0;
+      canvas.height = 0;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 
   const page = pdfDoc.addPage([image.width, image.height]);
@@ -143,7 +223,8 @@ const renderDomToPdf = async (element: HTMLElement, originalName: string) => {
 const convertHtmlToPdf = async (file: File) => {
   const text = await file.text();
   const container = createHiddenContainer();
-  container.innerHTML = text;
+  // Sanitize untrusted HTML before injecting into the app DOM (B12).
+  container.innerHTML = sanitizeHtml(text);
   
   try {
     const res = await renderDomToPdf(container, file.name);
@@ -158,7 +239,8 @@ const convertDocxToPdf = async (file: File) => {
   const result = await mammoth.convertToHtml({ arrayBuffer });
   
   const container = createHiddenContainer();
-  container.innerHTML = `<div class="mammoth-output">${result.value}</div>`;
+  // mammoth output is derived from user-uploaded docs; sanitize defensively too.
+  container.innerHTML = `<div class="mammoth-output">${sanitizeHtml(result.value)}</div>`;
   
   // Add some basic styles for mammoth output
   const style = document.createElement('style');

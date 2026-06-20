@@ -10,8 +10,9 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => {
-  const { pages } = usePdfStore();
-  const hasContent = pages.length > 0;
+  // Boolean selector: only re-renders when presence of pages flips, not on
+  // every page mutation / progress tick.
+  const hasContent = usePdfStore(s => s.pages.length > 0);
 
   const tools: { id: ToolType; label: string; icon: string; disabled?: boolean; showBadge?: boolean }[] = [
     {
@@ -131,4 +132,4 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => 
   );
 };
 
-export default Navigation;
+export default React.memo(Navigation);

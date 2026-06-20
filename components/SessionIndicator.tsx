@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 
 const SessionIndicator: React.FC = () => {
-    const { hasRecoveredSession, dismissRecoveryIndication, clearWorkspace } = usePdfStore();
+    const hasRecoveredSession = usePdfStore(s => s.hasRecoveredSession);
+    const dismissRecoveryIndication = usePdfStore(s => s.dismissRecoveryIndication);
+    const clearWorkspace = usePdfStore(s => s.clearWorkspace);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -75,4 +77,4 @@ const SessionIndicator: React.FC = () => {
     );
 };
 
-export default SessionIndicator;
+export default React.memo(SessionIndicator);

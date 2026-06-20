@@ -24,7 +24,7 @@ const PageGrid: React.FC<PageGridProps> = ({
   disabled,
   selectionMode = false
 }) => {
-  const { setPreviewPageId } = usePdfStore();
+  const setPreviewPageId = usePdfStore(s => s.setPreviewPageId);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -139,4 +139,4 @@ const PageGrid: React.FC<PageGridProps> = ({
   );
 };
 
-export default PageGrid;
+export default React.memo(PageGrid);

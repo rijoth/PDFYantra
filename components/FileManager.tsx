@@ -8,7 +8,11 @@ interface FileManagerProps {
 }
 
 const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
-    const { files, pages, sortPagesByFileOrder, removeFile } = usePdfStore();
+    // Scoped selectors avoid re-rendering on unrelated store ticks (progress, search).
+    const files = usePdfStore(s => s.files);
+    const pages = usePdfStore(s => s.pages);
+    const sortPagesByFileOrder = usePdfStore(s => s.sortPagesByFileOrder);
+    const removeFile = usePdfStore(s => s.removeFile);
     const [fileOrder, setFileOrder] = useState<string[]>([]);
 
     useEffect(() => {
