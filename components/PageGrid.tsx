@@ -55,31 +55,24 @@ const PageGrid: React.FC<PageGridProps> = ({
                     isDragDisabled={disabled}
                   >
                     {(provided, snapshot) => {
-                      // dnd owns `transform` (position) and `transition` (neighbour slide /
-                      // drop settle) via provided.draggableProps.style. We only:
-                      //  - append a lift (scale + slight rotate) to the dragged card's transform
-                      //  - force transition: none WHILE this card is being dragged so it tracks
-                      //    the finger with zero lag.
-                      // We deliberately do NOT add our own transform transition after drop: doing
-                      // so animates the dropped card from its dragged offset back home, which makes
-                      // it visibly float/stick after release and overlap already-settled siblings
-                      // (weird desktop spacing). dnd's built-in dropAnimation handles the settle.
+                      // dnd owns the outer element's `transform` (position) and `transition`
+                      // (neighbour slide + its own dropAnimation settle). We must NOT override
+                      // those, or the dropped card freezes at its dragged offset: in
+                      // @hello-pangea/dnd snapshot.isDragging stays true through the drop
+                      // animation, so a `transition: none` while isDragging kills the settle.
+                      // Instead we split concerns:
+                      //   outer div  -> dnd-positioned (translate/transition untouched)
+                      //   inner div  -> visual card; gets a lift (scale + slight rotate) via a
+                      //                 class with its own transform transition, independent of
+                      //                 position so it eases up on grab and down on release.
                       const baseStyle = provided.draggableProps.style;
-                      const transform = snapshot.isDragging
-                        ? `${baseStyle?.transform ?? ''} scale(1.08) rotate(-1.5deg)`.trim()
-                        : baseStyle?.transform;
-                      const transition = snapshot.isDragging ? 'none' : baseStyle?.transition;
 
                       return (
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        style={{
-                          ...baseStyle,
-                          transform,
-                          transition,
-                        }}
+                        style={baseStyle}
                         onClick={(e) => {
                             if (!disabled) {
                                 // If selectionMode is strictly true, we force multi-select logic (toggle)
@@ -88,10 +81,13 @@ const PageGrid: React.FC<PageGridProps> = ({
                                 onToggleSelect(page.id, isMulti);
                             }
                         }}
+                        className={`relative group rounded-sm3 ${snapshot.isDragging ? 'z-50 cursor-grabbing' : 'cursor-pointer'}`}
+                      >
+                      <div
                         className={`
-                          relative group flex flex-col rounded-sm3 overflow-hidden cursor-pointer
-                          transition-[background-color,border-color,box-shadow] duration-200
-                          ${snapshot.isDragging ? 'shadow-elevation-3 z-50 cursor-grabbing' : ''}
+                          relative flex flex-col rounded-sm3 overflow-hidden h-full
+                          transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out
+                          ${snapshot.isDragging ? 'shadow-elevation-3 scale-[1.08] -rotate-[1.5deg]' : 'scale-100 rotate-0'}
                           ${isSelected ? 'ring-4 ring-secondaryContainer bg-secondaryContainer' : 'bg-surfaceVariant/20 border border-transparent'}
                         `}
                       >
@@ -148,6 +144,7 @@ const PageGrid: React.FC<PageGridProps> = ({
                                 ></div>
                             )}
                         </div>
+                      </div>
                       </div>
                       );
                     }}
