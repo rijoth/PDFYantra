@@ -65,6 +65,17 @@
   --color-error: 255 180 171;           /* #FFB4AB */
 }
 
+/* ===== Drag & Drop (touch / mobile) =====
+   @hello-pangea/dnd relies on native touch events to start a drag. Without
+   `touch-action: none` the browser intercepts the gesture for page scrolling,
+   so dragging page cards works with a mouse but not on touch devices. We scope
+   the rule to the library's data attributes so only draggable cards opt out of
+   browser panning/zooming. */
+[data-rfd-draggable-id],
+[data-rfd-drag-handle-id] {
+  touch-action: none;
+}
+
 /* Hide scrollbars on elements marked with .no-scrollbar / .scrollbar-hide */
 .no-scrollbar::-webkit-scrollbar,
 .scrollbar-hide::-webkit-scrollbar {
