@@ -37,11 +37,11 @@ const PageGrid: React.FC<PageGridProps> = ({
   return (
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="pages-grid" direction="horizontal">
-          {(provided) => (
+          {(provided, snapshot) => (
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4 select-none"
+              className={`grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4 select-none rounded-md3 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-primaryContainer/10' : ''}`}
             >
               {pages.map((page, index) => {
                 const sourceFile = fileMap.get(page.fileId);
@@ -54,11 +54,30 @@ const PageGrid: React.FC<PageGridProps> = ({
                     index={index}
                     isDragDisabled={disabled}
                   >
-                    {(provided, snapshot) => (
+                    {(provided, snapshot) => {
+                      // dnd owns the `transform` (position) via provided.draggableProps.style.
+                      // Tailwind `scale-*` would be overridden by that inline transform, so we
+                      // compose the lift effect (scale + slight rotate) into the same transform.
+                      // No transition while dragging => the card tracks the finger with no lag;
+                      // a transform transition otherwise lets neighbours slide and the drop settle.
+                      const baseTransform = provided.draggableProps.style?.transform;
+                      const transform = snapshot.isDragging
+                        ? `${baseTransform} scale(1.08) rotate(-1.5deg)`
+                        : baseTransform;
+                      const transition = snapshot.isDragging
+                        ? 'none'
+                        : 'transform 220ms cubic-bezier(0.2, 0, 0, 1)';
+
+                      return (
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
+                        style={{
+                          ...provided.draggableProps.style,
+                          transform,
+                          transition,
+                        }}
                         onClick={(e) => {
                             if (!disabled) {
                                 // If selectionMode is strictly true, we force multi-select logic (toggle)
@@ -68,8 +87,9 @@ const PageGrid: React.FC<PageGridProps> = ({
                             }
                         }}
                         className={`
-                          relative group flex flex-col rounded-sm3 overflow-hidden transition-all duration-200 cursor-pointer
-                          ${snapshot.isDragging ? 'shadow-elevation-3 scale-105 z-50' : ''}
+                          relative group flex flex-col rounded-sm3 overflow-hidden cursor-pointer
+                          transition-[background-color,border-color,box-shadow] duration-200
+                          ${snapshot.isDragging ? 'shadow-elevation-3 z-50 cursor-grabbing' : ''}
                           ${isSelected ? 'ring-4 ring-secondaryContainer bg-secondaryContainer' : 'bg-surfaceVariant/20 border border-transparent'}
                         `}
                       >
@@ -127,7 +147,8 @@ const PageGrid: React.FC<PageGridProps> = ({
                             )}
                         </div>
                       </div>
-                    )}
+                      );
+                    }}
                   </Draggable>
                 );
               })}
