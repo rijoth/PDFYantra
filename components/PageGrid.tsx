@@ -55,18 +55,20 @@ const PageGrid: React.FC<PageGridProps> = ({
                     isDragDisabled={disabled}
                   >
                     {(provided, snapshot) => {
-                      // dnd owns the `transform` (position) via provided.draggableProps.style.
-                      // Tailwind `scale-*` would be overridden by that inline transform, so we
-                      // compose the lift effect (scale + slight rotate) into the same transform.
-                      // No transition while dragging => the card tracks the finger with no lag;
-                      // a transform transition otherwise lets neighbours slide and the drop settle.
-                      const baseTransform = provided.draggableProps.style?.transform;
+                      // dnd owns `transform` (position) and `transition` (neighbour slide /
+                      // drop settle) via provided.draggableProps.style. We only:
+                      //  - append a lift (scale + slight rotate) to the dragged card's transform
+                      //  - force transition: none WHILE this card is being dragged so it tracks
+                      //    the finger with zero lag.
+                      // We deliberately do NOT add our own transform transition after drop: doing
+                      // so animates the dropped card from its dragged offset back home, which makes
+                      // it visibly float/stick after release and overlap already-settled siblings
+                      // (weird desktop spacing). dnd's built-in dropAnimation handles the settle.
+                      const baseStyle = provided.draggableProps.style;
                       const transform = snapshot.isDragging
-                        ? `${baseTransform} scale(1.08) rotate(-1.5deg)`
-                        : baseTransform;
-                      const transition = snapshot.isDragging
-                        ? 'none'
-                        : 'transform 220ms cubic-bezier(0.2, 0, 0, 1)';
+                        ? `${baseStyle?.transform ?? ''} scale(1.08) rotate(-1.5deg)`.trim()
+                        : baseStyle?.transform;
+                      const transition = snapshot.isDragging ? 'none' : baseStyle?.transition;
 
                       return (
                       <div
@@ -74,7 +76,7 @@ const PageGrid: React.FC<PageGridProps> = ({
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                         style={{
-                          ...provided.draggableProps.style,
+                          ...baseStyle,
                           transform,
                           transition,
                         }}
