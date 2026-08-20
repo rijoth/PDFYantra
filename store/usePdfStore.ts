@@ -2,9 +2,10 @@
 
 import { create } from 'zustand';
 import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile, SearchResult, HistoryEntry } from '../types';
-import { clearSession } from '../services/storageService';
+import { clearSession, saveSession } from '../services/storageService';
 import { generateThumbnails, regenerateThumbnailsForFile } from '../services/pdfService';
-import { searchWorkspace, clearSearchCache } from '../services/searchService';
+import { searchWorkspace, clearSearchCache, evictFileFromSearchCache } from '../services/searchService';
+import { evictDoc, clearDocCache } from '../services/pdfCache';
 
 interface PdfState {
   // --- Workspace Data ---
@@ -253,12 +254,11 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     };
 
     // 2. Generate new thumbnails
-    // Note: This is an async operation inside a store action. 
-    // Ideally, thumbnails generation should happen in a service, but here we need to sync state.
     const newPages = await generateThumbnails(updatedUploadedFile);
 
-    // Clear search cache because content changed
-    clearSearchCache();
+    // Evict file-specific caches
+    evictFileFromSearchCache(fileId);
+    evictDoc(fileId);
 
     // 3. Update Store
     set((currentState) => {
@@ -267,17 +267,18 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
       // Update pages: We need to preserve the relative order/position of the pages
       // belonging to this file, but their content has changed.
-      // Since compression preserves page count usually, we can map 1:1.
-
       const nextAllPages = currentState.pages.map(p => {
         if (p.fileId === fileId) {
+          // Revoke old blob URL
+          if (p.thumbnailUrl && p.thumbnailUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(p.thumbnailUrl);
+          }
           // Find corresponding new page by index
           const match = newPages.find(np => np.pageIndex === p.pageIndex);
           if (match) {
             return {
               ...p,
               thumbnailUrl: match.thumbnailUrl
-              // We preserve ID and rotation from the workspace
             };
           }
         }
@@ -293,7 +294,18 @@ export const usePdfStore = create<PdfState>((set, get) => ({
 
   removeFile: (fileId) => {
     get().pushToHistory();
+    // Evict caches for this file
+    evictFileFromSearchCache(fileId);
+    evictDoc(fileId);
+
     set((state) => {
+      // Revoke blob URLs for removed pages
+      state.pages.forEach(p => {
+        if (p.fileId === fileId && p.thumbnailUrl?.startsWith('blob:')) {
+          URL.revokeObjectURL(p.thumbnailUrl);
+        }
+      });
+
       const nextFiles = new Map(state.files);
       nextFiles.delete(fileId);
 
@@ -403,8 +415,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       if (selectedPageIds.has(p.id)) {
         newPages.push({
           ...p,
-          id: Math.random().toString(36).substr(2, 9),
-          // Copying same fileId and thumbnail
+          id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${p.fileId}-dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         });
       }
     });
@@ -440,9 +451,10 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       }
     });
 
-    // Also clear the persistent storage
+    // Also clear the persistent storage and in-memory caches
     clearSession();
     clearSearchCache();
+    clearDocCache();
 
     set({
       files: new Map(),
@@ -625,9 +637,7 @@ usePdfStore.subscribe(
 
       if (saveTimer) clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
-        import('../services/storageService').then(({ saveSession }) => {
-          saveSession(state.files, state.pages, state.activeTool);
-        });
+        saveSession(state.files, state.pages, state.activeTool);
       }, 400);
     }
   }

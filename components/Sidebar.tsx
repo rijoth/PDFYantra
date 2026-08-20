@@ -75,6 +75,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => 
                 <button
                   onClick={() => !tool.disabled && onToolChange(tool.id)}
                   disabled={tool.disabled}
+                  aria-label={tool.label}
                   className={`
                             w-14 h-8 rounded-pill flex items-center justify-center transition-all duration-300 ripple
                             ${isActive
@@ -107,6 +108,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => 
               <button
                 onClick={() => !tool.disabled && onToolChange(tool.id)}
                 disabled={tool.disabled}
+                aria-label={tool.label}
                 className={`
                             w-16 h-8 rounded-pill flex items-center justify-center transition-all duration-300 ripple
                             ${isActive

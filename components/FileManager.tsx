@@ -19,6 +19,20 @@ const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
         setFileOrder(Array.from(files.keys()));
     }, [files]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    const pageCountByFile = React.useMemo(() => {
+        const counts = new Map<string, number>();
+        pages.forEach(p => counts.set(p.fileId, (counts.get(p.fileId) ?? 0) + 1));
+        return counts;
+    }, [pages]);
+
     const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
         const items = Array.from(fileOrder);
@@ -38,7 +52,7 @@ const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
             <div className="bg-surface rounded-md3 shadow-elevation-3 w-full max-w-md relative z-10 flex flex-col max-h-[80vh] animate-scale-in overflow-hidden">
                 <div className="p-6 border-b border-surfaceVariant flex justify-between items-center bg-surface">
                     <h3 className="text-xl font-display text-onSurfaceVariant">Manage Files</h3>
-                     <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant">
+                     <button onClick={onClose} aria-label="Close file manager" className="w-8 h-8 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant">
                         <i className="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -54,7 +68,7 @@ const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
                                     {fileOrder.map((fileId, index) => {
                                         const file = files.get(fileId);
                                         if (!file) return null;
-                                        const pageCount = pages.filter(p => p.fileId === fileId).length;
+                                        const pageCount = pageCountByFile.get(fileId) ?? 0;
 
                                         return (
                                             <Draggable key={fileId} draggableId={fileId} index={index}>

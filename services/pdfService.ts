@@ -1,18 +1,12 @@
 
 
 import { PDFDocument, degrees } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
 import { UploadedFile, PDFPage, SplitConfig } from '../types';
 import { parsePageRange } from '../utils/pdfUtils';
-import { getFileBuffer } from './pdfCache';
-
-// Configure PDF.js worker
-export const pdfjs = (pdfjsLib as any).default || pdfjsLib;
-
-// Use local worker bundled by Vite instead of CDN for better offline support and privacy
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url';
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+import { getFileBuffer, getCachedDoc } from './pdfCache';
+import { pdfjs } from './pdfjsSetup';
+export { pdfjs };
 
 /**
  * Unlocks a password-protected PDF or simply passes it through if not encrypted.
@@ -263,7 +257,6 @@ export const renderPageHighRes = async (
   pageIndex: number,
   rotation: number
 ): Promise<string> => {
-  const { getCachedDoc } = await import('./pdfCache');
   const pdf = await getCachedDoc(file);
   const page = await pdf.getPage(pageIndex + 1); // 1-based index
 
@@ -287,6 +280,10 @@ export const renderPageHighRes = async (
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
+      // Clean up canvas surface to free GPU memory
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0;
+      canvas.height = 0;
       if (blob) resolve(URL.createObjectURL(blob));
       else resolve('');
     }, 'image/jpeg', 0.85);
@@ -519,16 +516,11 @@ export const compressPdfFile = async (
 
     await page.render({ canvasContext: ctx, viewport }).promise;
 
-    // Convert to image
-    const imgData = canvas.toDataURL('image/jpeg', quality);
-    // Direct base64 to ArrayBuffer conversion is more robust than fetch() for local data URLs
-    const base64Data = imgData.split(',')[1];
-    const binaryString = atob(base64Data);
-    const len = binaryString.length;
-    const imgBytes = new Uint8Array(len);
-    for (let j = 0; j < len; j++) {
-      imgBytes[j] = binaryString.charCodeAt(j);
-    }
+    // Convert directly to Blob without base64 intermediate allocations
+    const imgBlob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', quality));
+    if (!imgBlob) throw new Error("Failed to compress page");
+
+    const imgBytes = new Uint8Array(await imgBlob.arrayBuffer());
 
     // Embed in new PDF
     const jpgImage = await newPdf.embedJpg(imgBytes);
@@ -541,6 +533,7 @@ export const compressPdfFile = async (
     });
 
     // Cleanup
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.width = 0;
     canvas.height = 0;
   }

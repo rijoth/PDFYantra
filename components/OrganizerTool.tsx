@@ -3,11 +3,10 @@ import React, { useCallback, useState, useRef, useEffect } from 'react';
 import PageGrid from './PageGrid';
 import FileManager from './FileManager';
 import PagePreview from './PagePreview';
-import { UploadedFile, AppStatus } from '../types';
+import { UploadedFile, AppStatus, PDFPage } from '../types';
 import { generateThumbnails, mergePages, formatFileSize, processFileWithPassword } from '../services/pdfService';
 import { usePdfStore } from '../store/usePdfStore';
-
-const FILE_COLORS = ['#0061A4', '#B3261E', '#2D6B28', '#E68619', '#6750A4'];
+import { FILE_COLORS, getFileColor } from '../utils/colors';
 
 // Internal component for highlighting search terms
 const HighlightedText = ({ text, highlight }: { text: string, highlight: string }) => {
@@ -96,13 +95,13 @@ const OrganizerTool: React.FC = () => {
     const handleFilesSelected = useCallback(async (rawFiles: File[]) => {
         const startColorIdx = fileMap.size % FILE_COLORS.length;
         const newUploadedFiles: UploadedFile[] = [];
-        let allNewPages: any[] = [];
+        let allNewPages: PDFPage[] = [];
 
         setStatus(AppStatus.PROCESSING);
 
         for (let i = 0; i < rawFiles.length; i++) {
             const file = rawFiles[i];
-            const fileId = Math.random().toString(36).substr(2, 9);
+            const fileId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
             setProcessingMessage(`Loading ${file.name}... (${i + 1}/${rawFiles.length})`);
             setProcessingProgress(0);
@@ -118,7 +117,7 @@ const OrganizerTool: React.FC = () => {
                     file: unlockedFile,
                     name: unlockedFile.name,
                     size: unlockedFile.size,
-                    color: FILE_COLORS[(startColorIdx + i) % FILE_COLORS.length]
+                    color: getFileColor(startColorIdx + i)
                 };
 
                 const extractedPages = await generateThumbnails(uploadedFile, (curr, total) => {

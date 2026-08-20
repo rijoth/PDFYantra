@@ -1,16 +1,25 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import DashboardLayout from './components/DashboardLayout';
 import LandingPage from './components/LandingPage';
-import OrganizerTool from './components/OrganizerTool';
-import SplitTool from './components/SplitTool';
-import ConvertTool from './components/ConvertTool';
-import CompressTool from './components/CompressTool';
 import ProcessingOverlay from './components/ProcessingOverlay';
 import PasswordModal from './components/PasswordModal';
 import { usePdfStore } from './store/usePdfStore';
 import { loadSession } from './services/storageService';
 import { AppStatus } from './types';
+
+// Code-split heavy tool components on demand
+const OrganizerTool = lazy(() => import('./components/OrganizerTool'));
+const SplitTool = lazy(() => import('./components/SplitTool'));
+const ConvertTool = lazy(() => import('./components/ConvertTool'));
+const CompressTool = lazy(() => import('./components/CompressTool'));
+
+const ToolLoader = () => (
+  <div className="h-[50vh] w-full flex flex-col items-center justify-center text-primary gap-3">
+    <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+    <span className="text-sm font-medium text-secondary">Loading tool...</span>
+  </div>
+);
 
 const App: React.FC = () => {
   const { activeTool, setActiveTool, restoreSession, setInitialized, isInitialized, status } = usePdfStore();
@@ -27,16 +36,23 @@ const App: React.FC = () => {
     document.title = titles[activeTool] || titles.home;
   }, [activeTool]);
 
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts (Ctrl+Z / Ctrl+Y) with input field protection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
         if (e.shiftKey) {
           usePdfStore.getState().redo();
         } else {
           usePdfStore.getState().undo();
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
         usePdfStore.getState().redo();
       }
     };
@@ -78,13 +94,29 @@ const App: React.FC = () => {
       case 'home':
         return <LandingPage onNavigate={setActiveTool} />;
       case 'merge':
-        return <OrganizerTool />;
+        return (
+          <Suspense fallback={<ToolLoader />}>
+            <OrganizerTool />
+          </Suspense>
+        );
       case 'split':
-        return <SplitTool onSplit={() => { }} isProcessing={status === AppStatus.PROCESSING} />;
+        return (
+          <Suspense fallback={<ToolLoader />}>
+            <SplitTool onSplit={() => { }} isProcessing={status === AppStatus.PROCESSING} />
+          </Suspense>
+        );
       case 'convert':
-        return <ConvertTool />;
+        return (
+          <Suspense fallback={<ToolLoader />}>
+            <ConvertTool />
+          </Suspense>
+        );
       case 'compress':
-        return <CompressTool />;
+        return (
+          <Suspense fallback={<ToolLoader />}>
+            <CompressTool />
+          </Suspense>
+        );
       default:
         return <LandingPage onNavigate={setActiveTool} />;
     }

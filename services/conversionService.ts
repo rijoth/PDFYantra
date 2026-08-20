@@ -6,7 +6,7 @@ import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { UploadedFile, PDFPage, ConvertFormat } from '../types';
-import { pdfjs } from './pdfService';
+import { pdfjs } from './pdfjsSetup';
 import { getFileBuffer } from './pdfCache';
 
 /**
@@ -310,27 +310,27 @@ export const convertFromPdf = async (
   if (format === 'text') {
     let fullText = '';
     for (const pageMeta of processList) {
-        const doc = await getDoc(pageMeta.fileId);
-        const page = await doc.getPage(pageMeta.pageNumber);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-        fullText += `--- Page ${pageMeta.pageNumber} ---\n${pageText}\n\n`;
+      const doc = await getDoc(pageMeta.fileId);
+      const page = await doc.getPage(pageMeta.pageIndex + 1);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += `--- Page ${pageMeta.pageNumber} ---\n${pageText}\n\n`;
     }
     const blob = new Blob([fullText], { type: 'text/plain' });
     return { blob, filename: `extracted_text_${timestamp}.txt`, isZip: false };
   }
-  
+
   else if (format === 'csv') {
     // Heuristic CSV extraction: Combine text items, sort by Y then X
     let fullCsv = 'Page,Content\n';
     for (const pageMeta of processList) {
-        const doc = await getDoc(pageMeta.fileId);
-        const page = await doc.getPage(pageMeta.pageNumber);
-        const textContent = await page.getTextContent();
-        
-        // Very basic extraction: just dump text. 
-        const pageText = textContent.items.map((item: any) => `"${item.str.replace(/"/g, '""')}"`).join(' ');
-        fullCsv += `${pageMeta.pageNumber},${pageText}\n`;
+      const doc = await getDoc(pageMeta.fileId);
+      const page = await doc.getPage(pageMeta.pageIndex + 1);
+      const textContent = await page.getTextContent();
+
+      // Basic extraction: dump text.
+      const pageText = textContent.items.map((item: any) => `"${item.str.replace(/"/g, '""')}"`).join(' ');
+      fullCsv += `${pageMeta.pageNumber},${pageText}\n`;
     }
     const blob = new Blob([fullCsv], { type: 'text/csv' });
     return { blob, filename: `extracted_data_${timestamp}.csv`, isZip: false };
@@ -338,65 +338,66 @@ export const convertFromPdf = async (
 
   else if (format === 'jpg' || format === 'png') {
     const mime = format === 'png' ? 'image/png' : 'image/jpeg';
-    
+
     // Optimization: Direct export for single page (No ZIP)
     if (processList.length === 1) {
-        const pageMeta = processList[0];
-        const doc = await getDoc(pageMeta.fileId);
-        const page = await doc.getPage(pageMeta.pageNumber);
-        
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        if (!context) throw new Error("Canvas context failed");
-        
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+      const pageMeta = processList[0];
+      const doc = await getDoc(pageMeta.fileId);
+      const page = await doc.getPage(pageMeta.pageIndex + 1);
 
-        await page.render({ canvasContext: context, viewport }).promise;
-        
-        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, mime, 0.8));
-        
-        // Cleanup canvas to free memory
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        canvas.width = 0;
-        canvas.height = 0;
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error("Canvas context failed");
 
-        if (!blob) throw new Error("Failed to create image blob");
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
 
-        return { 
-            blob, 
-            filename: `page_${pageMeta.pageNumber}.${format}`, 
-            isZip: false 
-        };
+      await page.render({ canvasContext: context, viewport }).promise;
+
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, mime, 0.85));
+
+      // Cleanup canvas to free memory
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0;
+      canvas.height = 0;
+
+      if (!blob) throw new Error("Failed to create image blob");
+
+      return {
+        blob,
+        filename: `page_${pageMeta.pageNumber}.${format}`,
+        isZip: false
+      };
     }
 
-    // Multiple pages: Create ZIP
+    // Multiple pages: Create ZIP with direct binary blobs (avoiding base64 string churn)
     for (let i = 0; i < processList.length; i++) {
-        const pageMeta = processList[i];
-        const doc = await getDoc(pageMeta.fileId);
-        const page = await doc.getPage(pageMeta.pageNumber);
-        
-        const viewport = page.getViewport({ scale: 2.0 }); // High res
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        if (!context) continue;
+      const pageMeta = processList[i];
+      const doc = await getDoc(pageMeta.fileId);
+      const page = await doc.getPage(pageMeta.pageIndex + 1);
 
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+      const viewport = page.getViewport({ scale: 2.0 }); // High res
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) continue;
 
-        await page.render({ canvasContext: context, viewport }).promise;
-        
-        const dataUrl = canvas.toDataURL(mime, 0.8);
-        const base64Data = dataUrl.split(',')[1];
-        
-        // Cleanup canvas to free memory
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        canvas.width = 0;
-        canvas.height = 0;
-        
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({ canvasContext: context, viewport }).promise;
+
+      const imgBlob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, mime, 0.85));
+
+      // Cleanup canvas to free memory
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0;
+      canvas.height = 0;
+
+      if (imgBlob) {
         const fileName = `page_${i + 1}_${pageMeta.pageNumber}.${format}`;
-        zip.file(fileName, base64Data, { base64: true });
+        zip.file(fileName, imgBlob);
+      }
     }
   }
 

@@ -35,6 +35,12 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
         return Array.from(files.values()).filter((f: UploadedFile) => fileIdsInWorkspace.has(f.id));
     }, [files, pages]);
 
+    const pageCountByFile = useMemo(() => {
+        const counts = new Map<string, number>();
+        pages.forEach(p => counts.set(p.fileId, (counts.get(p.fileId) ?? 0) + 1));
+        return counts;
+    }, [pages]);
+
     // Reset range when switching files to avoid invalid ranges
     useEffect(() => {
         setConfig(prev => ({ ...prev, rangeInput: '' }));
@@ -221,7 +227,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                             <option value="all">Entire Workspace ({pages.length} pages)</option>
                             {/* Explicitly type file to avoid 'unknown' type error */}
                             {availableFiles.map((file: UploadedFile) => {
-                                const count = pages.filter(p => p.fileId === file.id).length;
+                                const count = pageCountByFile.get(file.id) ?? 0;
                                 return (
                                     <option key={file.id} value={file.id}>
                                         {file.name} ({count} pages)

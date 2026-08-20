@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
-import { AppStatus, ConvertFormat, UploadedFile } from '../types';
+import { AppStatus, ConvertFormat, UploadedFile, PDFPage } from '../types';
 import { convertToPdf, convertFromPdf } from '../services/conversionService';
 import { generateThumbnails, formatFileSize, processFileWithPassword } from '../services/pdfService';
 import { isValidRangeFormat, parsePageRange } from '../utils/pdfUtils';
-
-const FILE_COLORS = ['#0061A4', '#B3261E', '#2D6B28', '#E68619', '#6750A4'];
+import { FILE_COLORS, getFileColor } from '../utils/colors';
 
 const ConvertTool: React.FC = () => {
     const {
@@ -60,6 +59,12 @@ const ConvertTool: React.FC = () => {
         const fileIdsInWorkspace = new Set(pages.map(p => p.fileId));
         return Array.from(files.values()).filter((f: UploadedFile) => fileIdsInWorkspace.has(f.id));
     }, [files, pages]);
+
+    const pageCountByFile = useMemo(() => {
+        const counts = new Map<string, number>();
+        pages.forEach(p => counts.set(p.fileId, (counts.get(p.fileId) ?? 0) + 1));
+        return counts;
+    }, [pages]);
 
     // Calculate pages based on scope (All Workspace vs Specific File)
     const targetPages = useMemo(() => {
@@ -122,13 +127,13 @@ const ConvertTool: React.FC = () => {
 
         try {
             const newUploadedFiles: UploadedFile[] = [];
-            let allNewPages: any[] = [];
+            let allNewPages: PDFPage[] = [];
             let startColorIdx = files.size % FILE_COLORS.length;
             const newConvertedItems: typeof convertedFiles = [];
 
             // 1. Process Native PDFs
             for (const file of pdfFiles) {
-                const fileId = Math.random().toString(36).substr(2, 9);
+                const fileId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
                 const unlockedFile = await processFileWithPassword(file, promptForPassword);
                 if (!unlockedFile) continue;
@@ -138,7 +143,7 @@ const ConvertTool: React.FC = () => {
                     file: unlockedFile,
                     name: unlockedFile.name,
                     size: unlockedFile.size,
-                    color: FILE_COLORS[(startColorIdx++) % FILE_COLORS.length]
+                    color: getFileColor(startColorIdx++)
                 };
                 const extracted = await generateThumbnails(uFile);
                 newUploadedFiles.push(uFile);
@@ -151,13 +156,13 @@ const ConvertTool: React.FC = () => {
 
                 for (const res of convertedResults) {
                     const file = new File([res.pdfBytes as any], res.name, { type: 'application/pdf' });
-                    const fileId = Math.random().toString(36).substr(2, 9);
+                    const fileId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
                     const uFile: UploadedFile = {
                         id: fileId,
                         file,
                         name: res.name, // The new PDF name
                         size: file.size,
-                        color: FILE_COLORS[(startColorIdx++) % FILE_COLORS.length]
+                        color: getFileColor(startColorIdx++)
                     };
                     const extracted = await generateThumbnails(uFile);
                     newUploadedFiles.push(uFile);
@@ -166,7 +171,7 @@ const ConvertTool: React.FC = () => {
                     // Add to local list for download/preview
                     const blob = new Blob([res.pdfBytes as any], { type: 'application/pdf' });
                     newConvertedItems.push({
-                        id: Math.random().toString(36).substr(2, 9),
+                        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                         name: res.name,
                         url: URL.createObjectURL(blob),
                         size: blob.size
@@ -274,7 +279,7 @@ const ConvertTool: React.FC = () => {
                                         <option value="all">Entire Workspace ({pages.length} pages)</option>
                                         {/* Explicitly type file to avoid 'unknown' type error */}
                                         {availableFiles.map((file: UploadedFile) => {
-                                            const count = pages.filter(p => p.fileId === file.id).length;
+                                            const count = pageCountByFile.get(file.id) ?? 0;
                                             return (
                                                 <option key={file.id} value={file.id}>
                                                     {file.name} ({count} pages)

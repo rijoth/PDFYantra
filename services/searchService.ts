@@ -1,6 +1,6 @@
-import { pdfjs } from './pdfService';
+import { pdfjs } from './pdfjsSetup';
 import { UploadedFile, PDFPage, SearchResult, SearchMatch } from '../types';
-import { getCachedDoc, clearDocCache } from './pdfCache';
+import { getCachedDoc, clearDocCache, evictDoc } from './pdfCache';
 
 /**
  * In-memory cache for extracted text.
@@ -8,6 +8,7 @@ import { getCachedDoc, clearDocCache } from './pdfCache';
  * Value: The raw text content of the page
  */
 const textCache = new Map<string, string>();
+const MAX_TEXT_CACHE_ENTRIES = 500;
 
 /**
  * Retrieves the text content of a specific page.
@@ -23,23 +24,24 @@ const getPageText = async (file: UploadedFile, pageIndex: number): Promise<strin
   // 1. Get or Load Document
   const pdf = await getCachedDoc(file);
 
-  // 2. Get Page
-  // pdfjs uses 1-based indexing for getPage
+  // 2. Get Page (pdfjs uses 1-based indexing for getPage)
   const page = await pdf.getPage(pageIndex + 1);
 
   // 3. Extract Text
   const tokenizedText = await page.getTextContent();
 
-  // Join items with a space. This is a basic extraction that doesn't 
-  // perfectly reconstruct layout (columns, tables), but sufficient for search.
   const pageText = tokenizedText.items
     .map((item: any) => item.str)
     .join(' ');
 
-  // Normalize whitespace (remove excessive spaces, newlines, tabs)
   const normalizedText = pageText.replace(/\s+/g, ' ').trim();
 
-  // Cache result
+  // Bounded cache
+  if (textCache.size >= MAX_TEXT_CACHE_ENTRIES) {
+    const [firstKey] = textCache.keys();
+    textCache.delete(firstKey);
+  }
+
   textCache.set(cacheKey, normalizedText);
 
   return normalizedText;
@@ -49,7 +51,7 @@ const getPageText = async (file: UploadedFile, pageIndex: number): Promise<strin
  * Creates a context snippet around the matched index.
  */
 const getSnippet = (text: string, matchIndex: number, queryLength: number): string => {
-  const snippetLength = 60; // Characters before and after
+  const snippetLength = 60;
   const start = Math.max(0, matchIndex - snippetLength);
   const end = Math.min(text.length, matchIndex + queryLength + snippetLength);
 
@@ -63,10 +65,6 @@ const getSnippet = (text: string, matchIndex: number, queryLength: number): stri
 
 /**
  * Performs a search across all provided pages.
- * @param query The search string
- * @param files Map of available files
- * @param pages List of pages in the workspace
- * @param onProgress Callback for progress updates
  */
 export const searchWorkspace = async (
   query: string,
@@ -84,49 +82,53 @@ export const searchWorkspace = async (
 
   for (let i = 0; i < pages.length; i += batchSize) {
     const batch = pages.slice(i, i + batchSize);
-    
-    await Promise.all(batch.map(async (page) => {
-      const file = files.get(page.fileId);
-      if (!file) return;
 
-      try {
-        const text = await getPageText(file, page.pageIndex);
-        const normalizedText = text.toLowerCase();
+    const batchResults = await Promise.all(
+      batch.map(async (page) => {
+        const file = files.get(page.fileId);
+        if (!file) return null;
 
-        // Find all occurrences
-        let matchIndex = normalizedText.indexOf(normalizedQuery);
+        try {
+          const text = await getPageText(file, page.pageIndex);
+          const normalizedText = text.toLowerCase();
+          const matches: SearchMatch[] = [];
 
-        while (matchIndex !== -1) {
-          // We found a match!
-
-          // Initialize result group if needed
-          if (!resultsMap.has(file.id)) {
-            resultsMap.set(file.id, {
-              fileId: file.id,
-              fileName: file.name,
-              fileColor: file.color,
-              matches: []
+          let matchIndex = normalizedText.indexOf(normalizedQuery);
+          while (matchIndex !== -1) {
+            const snippet = getSnippet(text, matchIndex, normalizedQuery.length);
+            matches.push({
+              pageId: page.id,
+              pageNumber: page.pageNumber,
+              matchIndex: matchIndex,
+              snippet: snippet
             });
+            matchIndex = normalizedText.indexOf(normalizedQuery, matchIndex + 1);
           }
 
-          // Create match object
-          // Use the Original Text for the snippet to preserve Case
-          const snippet = getSnippet(text, matchIndex, normalizedQuery.length);
-
-          resultsMap.get(file.id)!.matches.push({
-            pageId: page.id,
-            pageNumber: page.pageNumber,
-            matchIndex: matchIndex,
-            snippet: snippet
-          });
-
-          // Find next occurrence in this page
-          matchIndex = normalizedText.indexOf(normalizedQuery, matchIndex + 1);
+          return { file, matches };
+        } catch (err) {
+          console.error(`Error searching page ${page.pageNumber} of ${file.name}`, err);
+          return null;
         }
-      } catch (err) {
-        console.error(`Error searching page ${page.pageNumber} of ${file.name}`, err);
+      })
+    );
+
+    // Merge batch results sequentially to prevent any race condition
+    for (const item of batchResults) {
+      if (!item || item.matches.length === 0) continue;
+      const { file, matches } = item;
+
+      if (!resultsMap.has(file.id)) {
+        resultsMap.set(file.id, {
+          fileId: file.id,
+          fileName: file.name,
+          fileColor: file.color,
+          matches: []
+        });
       }
-    }));
+
+      resultsMap.get(file.id)!.matches.push(...matches);
+    }
 
     processedCount += batch.length;
     if (onProgress) onProgress(Math.min(processedCount, pages.length), pages.length);
@@ -139,9 +141,23 @@ export const searchWorkspace = async (
 };
 
 /**
- * Clears the internal caches. Useful if files are removed or workspace cleared.
+ * Evicts cached text for a specific file when removed or replaced.
+ */
+export const evictFileFromSearchCache = (fileId: string) => {
+  const prefix = `${fileId}-`;
+  for (const key of Array.from(textCache.keys())) {
+    if (key.startsWith(prefix)) {
+      textCache.delete(key);
+    }
+  }
+  evictDoc(fileId);
+};
+
+/**
+ * Clears the internal caches. Useful if workspace is cleared.
  */
 export const clearSearchCache = () => {
   textCache.clear();
   clearDocCache();
 };
+

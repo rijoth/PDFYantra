@@ -39,9 +39,9 @@ export const parsePageRange = (input: string, maxPages: number): number[] => {
 
 /**
  * Validates if the range string format is roughly correct (syntax check only).
+ * Matches formats like "1", "1-5", "1, 3, 5-8". Rejects malformed strings like "--", ",,", "1--3".
  */
 export const isValidRangeFormat = (input: string): boolean => {
-  if (!input) return false;
-  // Allows digits, commas, hyphens, and spaces
-  return /^[\d\s,-]+$/.test(input);
+  if (!input || !input.trim()) return false;
+  return /^\s*\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*\s*$/.test(input);
 };

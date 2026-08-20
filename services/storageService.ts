@@ -45,31 +45,38 @@ export const getDB = (): Promise<IDBDatabase> => {
 };
 
 /**
- * Saves the current workspace state to IndexedDB.
- * Uses a readwrite transaction to store files and metadata.
+ * Saves the current workspace state to IndexedDB using incremental diffing.
+ * Only puts new/updated files and deletes removed ones instead of clearing the entire store.
  */
 export const saveSession = async (files: Map<string, UploadedFile>, pages: PDFPage[], activeTool: ToolType) => {
   try {
     const db = await getDB();
     const tx = db.transaction([STORE_FILES, STORE_METADATA], 'readwrite');
-
-    // Save Files
     const filesStore = tx.objectStore(STORE_FILES);
 
-    // We clear files first to ensure we don't keep deleted files in storage
-    // In a more complex app we might diff, but for this size, clearing is safe and simple
-    await new Promise<void>((resolve, reject) => {
-      const req = filesStore.clear();
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+    // 1. Get existing keys in IDB
+    const existingKeysReq = filesStore.getAllKeys();
+    const existingKeys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      existingKeysReq.onsuccess = () => resolve(existingKeysReq.result);
+      existingKeysReq.onerror = () => reject(existingKeysReq.error);
     });
 
-    // Store actual File objects (Blobs)
+    const currentFileIds = new Set(files.keys());
+    const existingKeySet = new Set(existingKeys.map(k => String(k)));
+
+    // 2. Delete files that are no longer in the workspace
+    for (const key of existingKeySet) {
+      if (!currentFileIds.has(key)) {
+        filesStore.delete(key);
+      }
+    }
+
+    // 3. Put current files
     for (const file of Array.from(files.values())) {
       filesStore.put(file);
     }
 
-    // Save Metadata (Pages & Order)
+    // 4. Save Metadata (Pages & Order)
     const metaStore = tx.objectStore(STORE_METADATA);
     metaStore.put({ key: 'pages', value: pages });
     metaStore.put({ key: 'activeTool', value: activeTool });
@@ -81,8 +88,6 @@ export const saveSession = async (files: Map<string, UploadedFile>, pages: PDFPa
     });
   } catch (err) {
     console.error('Failed to save session locally:', err);
-    // We swallow the error here to avoid interrupting the user flow, 
-    // as persistence is a secondary convenience feature.
   }
 };
 

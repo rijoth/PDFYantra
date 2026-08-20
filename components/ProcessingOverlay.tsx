@@ -4,7 +4,9 @@ import { usePdfStore } from '../store/usePdfStore';
 import { AppStatus } from '../types';
 
 const ProcessingOverlay: React.FC = () => {
-    const { status, processingProgress: rawProgress, processingMessage } = usePdfStore();
+    const status = usePdfStore(s => s.status);
+    const rawProgress = usePdfStore(s => s.processingProgress);
+    const processingMessage = usePdfStore(s => s.processingMessage);
     const processingProgress = isFinite(rawProgress) ? Math.min(100, Math.max(0, rawProgress)) : 0;
 
     if (status !== AppStatus.PROCESSING) {
@@ -43,7 +45,7 @@ const ProcessingOverlay: React.FC = () => {
 
                         <div className="h-3 w-full bg-surfaceVariant rounded-full overflow-hidden border border-outline/5 relative shadow-inner">
                             <div
-                                className="h-full bg-gradient-to-r from-primary to-primaryContainer transition-all duration-500 ease-out shadow-lg"
+                                className="h-full bg-gradient-to-r from-primary to-primaryContainer transition-all duration-500 ease-out shadow-lg relative"
                                 style={{ width: `${processingProgress}%` }}
                             >
                                 {/* Animated shine effect */}
@@ -58,19 +60,8 @@ const ProcessingOverlay: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                @keyframes shine {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
-                }
-                .animate-shine {
-                    animation: shine 2s infinite;
-                }
-            `}} />
         </div>
     );
 };
 
-export default ProcessingOverlay;
+export default React.memo(ProcessingOverlay);

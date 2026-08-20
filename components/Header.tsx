@@ -102,6 +102,7 @@ const TopAppBar: React.FC = () => {
               disabled={pastLen === 0 || isHistoryLocked}
               className="w-8 h-8 rounded-full flex items-center justify-center text-onSurfaceVariant hover:bg-surfaceVariant disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               title="Undo (Ctrl+Z)"
+              aria-label="Undo action"
             >
               <i className="fa-solid fa-rotate-left text-sm"></i>
             </button>
@@ -110,6 +111,7 @@ const TopAppBar: React.FC = () => {
               disabled={futureLen === 0 || isHistoryLocked}
               className="w-8 h-8 rounded-full flex items-center justify-center text-onSurfaceVariant hover:bg-surfaceVariant disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               title="Redo (Ctrl+Y)"
+              aria-label="Redo action"
             >
               <i className="fa-solid fa-rotate-right text-sm"></i>
             </button>
@@ -129,6 +131,7 @@ const TopAppBar: React.FC = () => {
               onClick={clearWorkspace}
               className="ml-2 w-5 h-5 rounded-full hover:bg-error/10 hover:text-red-600 flex items-center justify-center transition-colors"
               title="Clear Workspace"
+              aria-label="Clear Workspace"
             >
               <i className="fa-solid fa-xmark"></i>
             </button>
@@ -142,6 +145,7 @@ const TopAppBar: React.FC = () => {
           onClick={toggleTheme}
           className="w-10 h-10 rounded-full hover:bg-surfaceVariant/50 flex items-center justify-center text-onSurfaceVariant transition-colors ripple"
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
           <i className={`fa-solid ${isDark ? 'fa-sun text-yellow-400' : 'fa-moon text-secondary'} text-lg transition-transform duration-300 ${isDark ? 'rotate-180' : 'rotate-0'}`}></i>
         </button>
@@ -155,4 +159,4 @@ const TopAppBar: React.FC = () => {
   );
 };
 
-export default TopAppBar;
+export default React.memo(TopAppBar);

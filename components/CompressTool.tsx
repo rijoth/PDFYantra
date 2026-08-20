@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { formatFileSize, compressPdfFile, generateThumbnails } from '../services/pdfService';
 import { CompressionSettings, CompressionResult, UploadedFile, AppStatus } from '../types';
+import { getFileColor } from '../utils/colors';
 
 const COMPRESSION_PROFILES: Record<string, CompressionSettings> = {
     low: { level: 'low', quality: 0.9, scale: 1.5 }, // Better Quality
@@ -145,10 +146,8 @@ const CompressTool: React.FC = () => {
 
     const handleAddAsNew = async (result: CompressionResult) => {
         const newFileObj = new File([result.compressedBlob], result.filename, { type: 'application/pdf' });
-        const id = Math.random().toString(36).substr(2, 9);
-
-        // We need a color, just pick one based on existing count
-        const color = filesArray[0]?.color || '#0061A4';
+        const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const color = getFileColor(files.size);
 
         const newUploadedFile: UploadedFile = {
             id,

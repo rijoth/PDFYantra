@@ -1,9 +1,8 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { generateThumbnails, processFileWithPassword } from '../services/pdfService';
-import { ToolType, UploadedFile } from '../types';
-
-const FILE_COLORS = ['#0061A4', '#B3261E', '#2D6B28', '#E68619', '#6750A4'];
+import { ToolType, UploadedFile, PDFPage } from '../types';
+import { FILE_COLORS, getFileColor } from '../utils/colors';
 
 interface LandingPageProps {
     onNavigate: (tool: ToolType) => void;
@@ -19,20 +18,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         setIsProcessing(true);
         const startColorIdx = files.size % FILE_COLORS.length;
         const newUploadedFiles: UploadedFile[] = [];
-        let allNewPages: any[] = [];
+        let allNewPages: PDFPage[] = [];
 
         const pdfFiles = rawFiles.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
 
         if (pdfFiles.length === 0) {
             setIsProcessing(false);
-            if (rawFiles.length > 0) alert("Please upload PDF files only.");
+            if (rawFiles.length > 0) setError("Please upload PDF files only.");
             return;
         }
 
         try {
             for (let i = 0; i < pdfFiles.length; i++) {
                 const file = pdfFiles[i];
-                const fileId = Math.random().toString(36).substr(2, 9);
+                const fileId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
                 const unlockedFile = await processFileWithPassword(file, promptForPassword);
                 if (!unlockedFile) continue;
@@ -42,7 +41,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     file: unlockedFile,
                     name: unlockedFile.name,
                     size: unlockedFile.size,
-                    color: FILE_COLORS[(startColorIdx + i) % FILE_COLORS.length]
+                    color: getFileColor(startColorIdx + i)
                 };
 
                 const extractedPages = await generateThumbnails(uploadedFile);
