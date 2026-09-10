@@ -25,7 +25,7 @@ export default defineConfig({
           'vendor-pdfjs': ['pdfjs-dist'],
           'vendor-pdflib': ['pdf-lib'],
           'vendor-office': ['mammoth', 'xlsx'],
-          'vendor-dnd': ['@hello-pangea/dnd'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
           'vendor-utils': ['jszip', 'html2canvas', 'zustand']
         }
       }

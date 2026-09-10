@@ -1,10 +1,10 @@
 import React from 'react';
-import { Draggable } from '@hello-pangea/dnd';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { PDFPage, UploadedFile } from '../types';
 
 interface PageCardProps {
   page: PDFPage;
-  index: number;
   sourceFile?: UploadedFile;
   isSelected: boolean;
   disabled?: boolean;
@@ -15,7 +15,6 @@ interface PageCardProps {
 
 const PageCard: React.FC<PageCardProps> = ({
   page,
-  index,
   sourceFile,
   isSelected,
   disabled,
@@ -23,33 +22,40 @@ const PageCard: React.FC<PageCardProps> = ({
   onToggleSelect,
   onPreview
 }) => {
-  return (
-    <Draggable draggableId={page.id} index={index} isDragDisabled={disabled}>
-      {(provided, snapshot) => {
-        const baseStyle = provided.draggableProps.style;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: page.id, disabled });
 
-        return (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
-            style={baseStyle}
-            onClick={(e) => {
-              if (!disabled) {
-                const isMulti = selectionMode || e.shiftKey || e.metaKey || e.ctrlKey;
-                onToggleSelect(page.id, isMulti);
-              }
-            }}
-            className={`relative group rounded-sm3 ${snapshot.isDragging ? 'z-50 cursor-grabbing' : 'cursor-pointer'}`}
-          >
-            <div
-              className={`
-                relative flex flex-col rounded-sm3 overflow-hidden h-full
-                transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out
-                ${snapshot.isDragging ? 'shadow-elevation-3 scale-[1.08] -rotate-[1.5deg]' : 'scale-100 rotate-0'}
-                ${isSelected ? 'ring-4 ring-secondaryContainer bg-secondaryContainer' : 'bg-surfaceVariant/20 border border-transparent'}
-              `}
-            >
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{
+        transform: CSS.Transform.toString(transform) ?? undefined,
+        transition,
+      }}
+      onClick={(e) => {
+        if (!disabled) {
+          const isMulti = selectionMode || e.shiftKey || e.metaKey || e.ctrlKey;
+          onToggleSelect(page.id, isMulti);
+        }
+      }}
+      className={`relative group rounded-sm3 ${isDragging ? 'z-50 cursor-grabbing' : 'cursor-pointer'}`}
+    >
+      <div
+        className={`
+          relative flex flex-col rounded-sm3 overflow-hidden h-full
+          transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out
+          ${isDragging ? 'shadow-elevation-3 scale-[1.08] -rotate-[1.5deg]' : 'scale-100 rotate-0'}
+          ${isSelected ? 'ring-4 ring-secondaryContainer bg-secondaryContainer' : 'bg-surfaceVariant/20 border border-transparent'}
+        `}
+      >
               {/* Selection Checkbox */}
               <div
                 className="absolute top-2 left-2 z-40 p-1 cursor-pointer hover:bg-black/10 rounded-full transition-colors"
@@ -125,9 +131,6 @@ const PageCard: React.FC<PageCardProps> = ({
               </div>
             </div>
           </div>
-        );
-      }}
-    </Draggable>
   );
 };
 

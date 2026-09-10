@@ -1,11 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { usePdfStore } from '../store/usePdfStore';
 import { formatFileSize } from '../services/pdfService';
+import { UploadedFile } from '../types';
 
 interface FileManagerProps {
     onClose: () => void;
 }
+
+interface FileRowProps {
+    fileId: string;
+    file: UploadedFile;
+    pageCount: number;
+    onRemove: (fileId: string) => void;
+}
+
+const FileRow: React.FC<FileRowProps> = ({ fileId, file, pageCount, onRemove }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: fileId });
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform) ?? undefined,
+                transition,
+            }}
+            className={`p-3 rounded-xl border flex items-center gap-3 bg-surface transition-colors ${isDragging ? 'shadow-lg border-primary z-50' : 'border-outline/20 hover:bg-surfaceVariant/30'}`}
+        >
+            <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab text-secondary hover:text-onSurfaceVariant px-1 touch-none"
+            >
+                <i className="fa-solid fa-grip-vertical"></i>
+            </div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm" style={{ backgroundColor: file.color }}>
+                PDF
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="truncate font-medium text-sm text-onSurfaceVariant">{file.name}</div>
+                <div className="text-xs text-secondary">{formatFileSize(file.size)} • {pageCount} pages</div>
+            </div>
+            <button
+                onClick={() => onRemove(fileId)}
+                className="w-8 h-8 flex items-center justify-center text-secondary hover:text-error hover:bg-error/10 rounded-full transition-colors"
+                title="Remove File"
+            >
+                <i className="fa-regular fa-trash-can"></i>
+            </button>
+        </div>
+    );
+};
 
 const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
     // Scoped selectors avoid re-rendering on unrelated store ticks (progress, search).
@@ -33,12 +98,15 @@ const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
         return counts;
     }, [pages]);
 
-    const handleDragEnd = (result: DropResult) => {
-        if (!result.destination) return;
-        const items = Array.from(fileOrder);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-        setFileOrder(items);
+    const sensors = useSensors(useSensor(PointerSensor));
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const activeIndex = fileOrder.indexOf(String(active.id));
+        const overIndex = fileOrder.indexOf(String(over.id));
+        if (activeIndex === -1 || overIndex === -1) return;
+        setFileOrder(arrayMove(fileOrder, activeIndex, overIndex));
     };
 
     const handleApply = () => {
@@ -61,51 +129,27 @@ const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
                     <p className="text-sm text-secondary mb-4">
                         Drag to reorder files. This will regroup all pages in the workspace based on this order.
                     </p>
-                    <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="file-list">
-                            {(provided) => (
-                                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                                    {fileOrder.map((fileId, index) => {
-                                        const file = files.get(fileId);
-                                        if (!file) return null;
-                                        const pageCount = pageCountByFile.get(fileId) ?? 0;
+                    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                        <SortableContext items={fileOrder} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-2">
+                                {fileOrder.map((fileId) => {
+                                    const file = files.get(fileId);
+                                    if (!file) return null;
+                                    const pageCount = pageCountByFile.get(fileId) ?? 0;
 
-                                        return (
-                                            <Draggable key={fileId} draggableId={fileId} index={index}>
-                                                {(provided, snapshot) => (
-                                                    <div
-                                                        ref={provided.innerRef}
-                                                        {...provided.draggableProps}
-                                                        {...provided.dragHandleProps}
-                                                        className={`p-3 rounded-xl border flex items-center gap-3 bg-surface transition-colors ${snapshot.isDragging ? 'shadow-lg border-primary z-50' : 'border-outline/20 hover:bg-surfaceVariant/30'}`}
-                                                    >
-                                                        <div className="cursor-grab text-secondary hover:text-onSurfaceVariant px-1">
-                                                            <i className="fa-solid fa-grip-vertical"></i>
-                                                        </div>
-                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm" style={{ backgroundColor: file.color }}>
-                                                            PDF
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="truncate font-medium text-sm text-onSurfaceVariant">{file.name}</div>
-                                                            <div className="text-xs text-secondary">{formatFileSize(file.size)} • {pageCount} pages</div>
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => removeFile(fileId)}
-                                                            className="w-8 h-8 flex items-center justify-center text-secondary hover:text-error hover:bg-error/10 rounded-full transition-colors"
-                                                            title="Remove File"
-                                                        >
-                                                            <i className="fa-regular fa-trash-can"></i>
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </Draggable>
-                                        );
-                                    })}
-                                    {provided.placeholder}
-                                </div>
-                            )}
-                        </Droppable>
-                    </DragDropContext>
+                                    return (
+                                        <FileRow
+                                            key={fileId}
+                                            fileId={fileId}
+                                            file={file}
+                                            pageCount={pageCount}
+                                            onRemove={removeFile}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
                     
                     {fileOrder.length === 0 && (
                          <div className="text-center py-8 text-secondary italic">No files loaded</div>
