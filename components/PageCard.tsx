@@ -46,7 +46,7 @@ const PageCard: React.FC<PageCardProps> = ({
           onToggleSelect(page.id, isMulti);
         }
       }}
-      className={`relative group rounded-sm3 ${isDragging ? 'z-50 cursor-grabbing' : 'cursor-pointer'}`}
+      className={`relative group rounded-sm3 touch-manipulation ${isDragging ? 'z-50 cursor-grabbing' : 'cursor-pointer'}`}
     >
       <div
         className={`
