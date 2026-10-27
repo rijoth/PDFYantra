@@ -152,7 +152,6 @@ const TopAppBar: React.FC = () => {
 
         <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-primaryContainer/30 rounded-pill border border-transparent hover:border-primaryContainer/50 transition-colors cursor-help" title="All processing happens in your browser">
           <i className="fa-solid fa-shield-halved text-primary text-sm"></i>
-          <span className="text-xs font-medium text-onSurfaceVariant">Local Engine</span>
         </div>
       </div>
     </header>
