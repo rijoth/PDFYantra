@@ -1,4 +1,6 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 const Footer: React.FC = () => {
   return (
@@ -21,7 +23,7 @@ const Footer: React.FC = () => {
             className="flex items-center gap-2 hover:text-primary transition-colors group"
             aria-label="View Source on GitHub"
           >
-            <i className="fa-brands fa-github text-lg group-hover:scale-110 transition-transform duration-200"></i>
+            <FontAwesomeIcon icon={faGithub} className="text-lg group-hover:scale-110 transition-transform duration-200" />
           </a>
         </div>
 

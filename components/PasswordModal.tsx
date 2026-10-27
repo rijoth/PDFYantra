@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleExclamation, faLock, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 
 const PasswordModal: React.FC = () => {
     const { passwordPrompt, resolvePasswordPrompt } = usePdfStore();
@@ -47,7 +49,7 @@ const PasswordModal: React.FC = () => {
             >
                 <div className="p-6 border-b border-surfaceVariant flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-primaryContainer text-onPrimaryContainer flex items-center justify-center text-xl shrink-0">
-                        <i className="fa-solid fa-lock"></i>
+                        <FontAwesomeIcon icon={faLock} />
                     </div>
                     <div>
                         <h3 className="text-xl font-display text-onSurfaceVariant">Protected PDF</h3>
@@ -60,7 +62,7 @@ const PasswordModal: React.FC = () => {
                 <div className="p-6">
                     {passwordPrompt.isRetry && (
                         <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-start gap-2 border border-red-100">
-                            <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
+                            <FontAwesomeIcon icon={faCircleExclamation} className="mt-0.5" />
                             <p>Incorrect password. Please try again.</p>
                         </div>
                     )}
@@ -81,7 +83,7 @@ const PasswordModal: React.FC = () => {
                         </div>
 
                         <div className="flex items-start gap-3 p-3 bg-surfaceVariant/30 rounded-lg text-xs text-secondary mb-6">
-                            <i className="fa-solid fa-shield-halved mt-0.5 text-primary"></i>
+                            <FontAwesomeIcon icon={faShieldHalved} className="mt-0.5 text-primary" />
                             <p>
                                 Passwords are used locally in your browser to unlock the document and are <b>never saved</b> or transmitted anywhere.
                             </p>

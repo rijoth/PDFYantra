@@ -7,6 +7,9 @@ import { UploadedFile, AppStatus, PDFPage } from '../types';
 import { generateThumbnails, mergePages, formatFileSize, processFileWithPassword } from '../services/pdfService';
 import { usePdfStore } from '../store/usePdfStore';
 import { FILE_COLORS, getFileColor } from '../utils/colors';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCopy, faEye, faFaceFrown, faTrashCan } from '@fortawesome/free-regular-svg-icons';
+import { faCheck, faCheckDouble, faCircleNotch, faCloudArrowUp, faDownload, faFolderTree, faListCheck, faMagnifyingGlass, faPlus, faRotateLeft, faRotateRight, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 // Internal component for highlighting search terms
 const HighlightedText = ({ text, highlight }: { text: string, highlight: string }) => {
@@ -203,7 +206,7 @@ const OrganizerTool: React.FC = () => {
                 {!isSearching && totalMatches === 0 && (
                     <div className="text-center py-12">
                         <div className="w-16 h-16 bg-surfaceVariant/50 rounded-full flex items-center justify-center mx-auto mb-4 text-secondary">
-                            <i className="fa-regular fa-face-frown text-2xl"></i>
+                            <FontAwesomeIcon icon={faFaceFrown} className="text-2xl" />
                         </div>
                         <h3 className="text-lg font-medium text-onSurfaceVariant">No matches found</h3>
                         <p className="text-secondary text-sm">Try checking your spelling.</p>
@@ -238,7 +241,7 @@ const OrganizerTool: React.FC = () => {
                                             <HighlightedText text={match.snippet} highlight={localQuery} />
                                         </div>
                                         <div className="flex items-center text-outline/30 group-hover:text-primary transition-colors px-2">
-                                            <i className="fa-regular fa-eye"></i>
+                                            <FontAwesomeIcon icon={faEye} />
                                         </div>
                                     </div>
                                 </div>
@@ -255,7 +258,7 @@ const OrganizerTool: React.FC = () => {
             <div className="flex-1 flex flex-col items-center justify-center animate-scale-in py-12">
                 <div className="bg-surface rounded-md3 p-10 text-center max-w-sm w-full border border-surfaceVariant">
                     <div className="w-20 h-20 bg-primaryContainer text-onPrimaryContainer rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-                        <i className="fa-solid fa-check"></i>
+                        <FontAwesomeIcon icon={faCheck} />
                     </div>
                     <h2 className="text-2xl font-normal text-onSurfaceVariant mb-2">Ready</h2>
                     <p className="text-secondary mb-8">
@@ -268,7 +271,7 @@ const OrganizerTool: React.FC = () => {
                             download={downloadInfo.filename}
                             className="h-12 rounded-pill bg-primary text-onPrimary font-medium flex items-center justify-center gap-2 hover:shadow-elevation-1 transition-all ripple"
                         >
-                            <i className="fa-solid fa-download"></i> Download
+                            <FontAwesomeIcon icon={faDownload} /> Download
                         </a>
                         <button
                             onClick={() => {
@@ -301,7 +304,7 @@ const OrganizerTool: React.FC = () => {
                                 onClick={() => setShowFileManager(true)}
                                 className="h-9 px-4 rounded-lg text-sm font-medium border border-outline text-onSurfaceVariant hover:bg-surfaceVariant/30 flex items-center gap-2 whitespace-nowrap"
                             >
-                                <i className="fa-solid fa-folder-tree"></i> Files
+                                <FontAwesomeIcon icon={faFolderTree} /> Files
                             </button>
                             <div className="w-px h-6 bg-outline/20 mx-1"></div>
 
@@ -314,7 +317,7 @@ const OrganizerTool: React.FC = () => {
                                     }`}
                                 title="Toggle Multi-Select Mode"
                             >
-                                <i className={`fa-solid ${isSelectionMode ? 'fa-check-double' : 'fa-list-check'}`}></i>
+                                <FontAwesomeIcon icon={isSelectionMode ? faCheckDouble : faListCheck} />
                                 <span className="hidden sm:inline">Select Mode</span>
                             </button>
 
@@ -344,11 +347,11 @@ const OrganizerTool: React.FC = () => {
                                     onClick={() => { setShowSearchInput(true); }}
                                     className="h-9 px-4 rounded-lg text-sm font-medium border border-outline text-onSurfaceVariant hover:bg-surfaceVariant/30 flex items-center gap-2 whitespace-nowrap ml-2"
                                 >
-                                    <i className="fa-solid fa-magnifying-glass"></i> Search
+                                    <FontAwesomeIcon icon={faMagnifyingGlass} /> Search
                                 </button>
                             ) : (
                                 <div className="relative w-full max-w-md animate-scale-in">
-                                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-xs"></i>
+                                    <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-xs" />
                                     <input
                                         type="text"
                                         placeholder="Search text..."
@@ -365,7 +368,7 @@ const OrganizerTool: React.FC = () => {
                                         }}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-secondary hover:bg-surfaceVariant transition-colors"
                                     >
-                                        <i className="fa-solid fa-xmark text-xs"></i>
+                                        <FontAwesomeIcon icon={faXmark} className="text-xs" />
                                     </button>
                                 </div>
                             )}
@@ -381,7 +384,7 @@ const OrganizerTool: React.FC = () => {
                                 className="w-9 h-9 rounded-md flex items-center justify-center text-onSurfaceVariant active:bg-surfaceVariant disabled:opacity-30 transition-all"
                                 title="Undo"
                             >
-                                <i className="fa-solid fa-rotate-left text-sm"></i>
+                                <FontAwesomeIcon icon={faRotateLeft} className="text-sm" />
                             </button>
                             <button
                                 onClick={() => redo()}
@@ -389,7 +392,7 @@ const OrganizerTool: React.FC = () => {
                                 className="w-9 h-9 rounded-md flex items-center justify-center text-onSurfaceVariant active:bg-surfaceVariant disabled:opacity-30 transition-all"
                                 title="Redo"
                             >
-                                <i className="fa-solid fa-rotate-right text-sm"></i>
+                                <FontAwesomeIcon icon={faRotateRight} className="text-sm" />
                             </button>
                         </div>
                     )}
@@ -402,7 +405,7 @@ const OrganizerTool: React.FC = () => {
                             className="h-10 w-10 rounded-full flex items-center justify-center text-onSurfaceVariant hover:bg-surfaceVariant/50 transition-colors ripple"
                             title="Delete"
                         >
-                            <i className="fa-regular fa-trash-can"></i>
+                            <FontAwesomeIcon icon={faTrashCan} />
                         </button>
                     )}
 
@@ -419,7 +422,7 @@ const OrganizerTool: React.FC = () => {
                     `}
                         >
                             {status === AppStatus.PROCESSING ? (
-                                <><i className="fa-solid fa-circle-notch fa-spin"></i> Processing...</>
+                                <><FontAwesomeIcon icon={faCircleNotch} spin /> Processing...</>
                             ) : (
                                 hasSelection ? `Export (${selectedPageIds.size})` : 'Export All'
                             )}
@@ -436,7 +439,7 @@ const OrganizerTool: React.FC = () => {
                         className="absolute inset-0 m-4 border border-dashed border-outline rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surfaceVariant/20 transition-colors"
                     >
                         <div className="w-16 h-16 bg-primaryContainer/50 rounded-2xl flex items-center justify-center text-primary mb-4">
-                            <i className="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                            <FontAwesomeIcon icon={faCloudArrowUp} className="text-2xl" />
                         </div>
                         <p className="text-onSurfaceVariant font-medium text-lg">Tap to add PDFs</p>
                     </div>
@@ -465,7 +468,7 @@ const OrganizerTool: React.FC = () => {
                         onClick={() => fileInputRef.current?.click()}
                         className="w-14 h-14 bg-tertiaryContainer text-onTertiaryContainer rounded-fab shadow-elevation-3 hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center ripple"
                     >
-                        <i className="fa-solid fa-plus text-2xl"></i>
+                        <FontAwesomeIcon icon={faPlus} className="text-2xl" />
                     </button>
                     <input
                         type="file"
@@ -484,10 +487,10 @@ const OrganizerTool: React.FC = () => {
                     <span className="text-sm font-bold pl-2">{selectedPageIds.size} selected</span>
                     <div className="h-4 w-px bg-onSecondaryContainer/20"></div>
 
-                    <button onClick={() => rotateSelectedPages('ccw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Rotate Left"><i className="fa-solid fa-rotate-left"></i></button>
-                    <button onClick={() => rotateSelectedPages('cw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Rotate Right"><i className="fa-solid fa-rotate-right"></i></button>
-                    <button onClick={() => duplicateSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Duplicate"><i className="fa-regular fa-copy"></i></button>
-                    <button onClick={() => deleteSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors text-red-400" title="Delete"><i className="fa-solid fa-trash"></i></button>
+                    <button onClick={() => rotateSelectedPages('ccw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Rotate Left"><FontAwesomeIcon icon={faRotateLeft} /></button>
+                    <button onClick={() => rotateSelectedPages('cw')} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Rotate Right"><FontAwesomeIcon icon={faRotateRight} /></button>
+                    <button onClick={() => duplicateSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors" title="Duplicate"><FontAwesomeIcon icon={faCopy} /></button>
+                    <button onClick={() => deleteSelectedPages()} className="p-2 hover:bg-onSecondaryContainer/10 rounded-full transition-colors text-red-400" title="Delete"><FontAwesomeIcon icon={faTrash} /></button>
                 </div>
             </div>
         </div>

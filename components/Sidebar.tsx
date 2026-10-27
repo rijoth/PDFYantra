@@ -1,6 +1,9 @@
 
 
 import React from 'react';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCompress, faHouse, faLayerGroup, faScissors, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import { ToolType } from '../types';
 import { usePdfStore } from '../store/usePdfStore';
 
@@ -14,38 +17,38 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => 
   // every page mutation / progress tick.
   const hasContent = usePdfStore(s => s.pages.length > 0);
 
-  const tools: { id: ToolType; label: string; icon: string; disabled?: boolean; showBadge?: boolean }[] = [
+  const tools: { id: ToolType; label: string; icon: IconDefinition; disabled?: boolean; showBadge?: boolean }[] = [
     {
       id: 'home',
       label: 'Home',
-      icon: 'fa-house',
+      icon: faHouse,
       disabled: false
     },
     {
       id: 'merge',
       label: 'Organizer',
-      icon: 'fa-layer-group',
+      icon: faLayerGroup,
       disabled: false,
       showBadge: hasContent
     },
     {
       id: 'split',
       label: 'Split',
-      icon: 'fa-scissors',
+      icon: faScissors,
       disabled: false,
       showBadge: hasContent
     },
     {
       id: 'convert',
       label: 'Convert',
-      icon: 'fa-wand-magic-sparkles',
+      icon: faWandMagicSparkles,
       disabled: false,
       showBadge: false
     },
     {
       id: 'compress',
       label: 'Compress',
-      icon: 'fa-compress',
+      icon: faCompress,
       disabled: false,
       showBadge: false
     },
@@ -85,7 +88,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => 
                             ${tool.disabled ? 'opacity-40' : ''}
                         `}
                 >
-                  <i className={`fa-solid ${tool.icon} ${isActive ? 'text-lg' : 'text-xl'}`}></i>
+                  <FontAwesomeIcon icon={tool.icon} className={isActive ? 'text-lg' : 'text-xl'} />
                 </button>
                 {tool.showBadge && !isActive && (
                   <span className="absolute top-0 right-2 w-2.5 h-2.5 bg-primary rounded-full border-2 border-surface"></span>
@@ -118,7 +121,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolChange }) => 
                             ${tool.disabled ? 'opacity-40' : ''}
                         `}
               >
-                <i className={`fa-solid ${tool.icon} text-lg`}></i>
+                <FontAwesomeIcon icon={tool.icon} className="text-lg" />
               </button>
               {tool.showBadge && !isActive && (
                 <span className="absolute top-0 right-1/4 w-2 h-2 bg-primary rounded-full border border-surface"></span>

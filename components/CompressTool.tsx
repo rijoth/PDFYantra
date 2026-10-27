@@ -4,6 +4,9 @@ import { usePdfStore } from '../store/usePdfStore';
 import { formatFileSize, compressPdfFile, generateThumbnails } from '../services/pdfService';
 import { CompressionSettings, CompressionResult, PDFPage, UploadedFile, AppStatus } from '../types';
 import { getFileColor } from '../utils/colors';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilePdf } from '@fortawesome/free-regular-svg-icons';
+import { faArrowRight, faCheck, faCircleExclamation, faCircleNotch, faCompress, faDownload, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 
 const COMPRESSION_PROFILES: Record<string, CompressionSettings> = {
     low: { level: 'low', quality: 0.9, scale: 1.5 }, // Better Quality
@@ -215,7 +218,7 @@ const CompressTool: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-center p-8 animate-fade-in">
                 <div className="w-20 h-20 bg-surfaceVariant rounded-full flex items-center justify-center text-secondary mb-4">
-                    <i className="fa-solid fa-compress text-3xl"></i>
+                    <FontAwesomeIcon icon={faCompress} className="text-3xl" />
                 </div>
                 <h2 className="text-2xl font-display text-onSurfaceVariant mb-2">Compress PDF</h2>
                 <p className="text-secondary mb-6 max-w-md">
@@ -241,7 +244,7 @@ const CompressTool: React.FC = () => {
 
                 {skippedFiles.length > 0 && (
                     <div className="mb-4 p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-800">
-                        <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="mr-1" />
                         Skipped {skippedFiles.join(', ')}: no pages left in the workspace.
                     </div>
                 )}
@@ -260,7 +263,7 @@ const CompressTool: React.FC = () => {
                                     </h3>
                                     <div className="flex items-center gap-4 text-sm">
                                         <span className="text-secondary line-through">{formatFileSize(res.originalSize)}</span>
-                                        <i className="fa-solid fa-arrow-right text-secondary text-xs"></i>
+                                        <FontAwesomeIcon icon={faArrowRight} className="text-secondary text-xs" />
                                         <span className={`font-bold ${isSmaller ? 'text-green-600' : 'text-onSurfaceVariant'}`}>
                                             {formatFileSize(res.newSize)}
                                         </span>
@@ -282,7 +285,7 @@ const CompressTool: React.FC = () => {
                                         download={res.filename}
                                         className="flex-1 md:flex-none h-10 px-4 rounded-full border border-outline/30 text-onSurfaceVariant hover:bg-surfaceVariant flex items-center justify-center gap-2 transition-colors"
                                     >
-                                        <i className="fa-solid fa-download"></i> Save
+                                        <FontAwesomeIcon icon={faDownload} /> Save
                                     </a>
                                     <button
                                         onClick={() => handleAddAsNew(res)}
@@ -339,14 +342,14 @@ const CompressTool: React.FC = () => {
                                 w-5 h-5 rounded border flex items-center justify-center transition-colors
                                 ${isSelected ? 'bg-primary border-primary text-onPrimary' : 'border-outline/40 bg-white group-hover:border-primary'}
                             `}>
-                                    {isSelected && <i className="fa-solid fa-check text-[10px]"></i>}
+                                    {isSelected && <FontAwesomeIcon icon={faCheck} className="text-[10px]" />}
                                 </div>
 
                                 <div className="w-10 h-10 bg-red-50 text-red-600 rounded-lg flex items-center justify-center">
                                     {isProcessing ? (
-                                        <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                        <FontAwesomeIcon icon={faCircleNotch} spin />
                                     ) : (
-                                        <i className="fa-regular fa-file-pdf"></i>
+                                        <FontAwesomeIcon icon={faFilePdf} />
                                     )}
                                 </div>
 
@@ -373,7 +376,7 @@ const CompressTool: React.FC = () => {
             <div className="w-full lg:w-[320px] flex flex-col gap-6">
                 {errorMessage && status === AppStatus.ERROR && (
                     <div className="mb-6 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm flex items-start gap-3 animate-fade-in">
-                        <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
+                        <FontAwesomeIcon icon={faCircleExclamation} className="mt-0.5" />
                         <div className="flex-1">
                             <p className="font-bold mb-0.5">Compression Failed</p>
                             <p className="opacity-80">{errorMessage}</p>
@@ -383,7 +386,7 @@ const CompressTool: React.FC = () => {
 
                 {skippedFiles.length > 0 && (
                     <div className="mb-6 p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-800">
-                        <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="mr-1" />
                         Skipped {skippedFiles.join(', ')}: no pages left in the workspace.
                     </div>
                 )}
@@ -449,7 +452,7 @@ const CompressTool: React.FC = () => {
 
                     <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl mb-6">
                         <p className="text-xs text-yellow-800">
-                            <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                            <FontAwesomeIcon icon={faTriangleExclamation} className="mr-1" />
                             Files will be rasterized. Text selection and links will be removed to maximize compression.
                         </p>
                     </div>

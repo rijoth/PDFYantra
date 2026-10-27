@@ -4,6 +4,9 @@ import { isValidRangeFormat, parsePageRange } from '../utils/pdfUtils';
 import { usePdfStore } from '../store/usePdfStore';
 import { splitWorkspace, formatFileSize } from '../services/pdfService';
 import PagePreview from './PagePreview';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faFileLines, faFilePdf } from '@fortawesome/free-regular-svg-icons';
+import { faCheck, faChevronDown, faCircleNotch, faCropSimple, faDownload, faLayerGroup, faScissors } from '@fortawesome/free-solid-svg-icons';
 
 interface SplitToolProps {
     onSplit: (config: SplitConfig) => void;
@@ -110,7 +113,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
             <div className="flex-1 flex flex-col items-center justify-center animate-scale-in py-12">
                 <div className="bg-surface rounded-md3 p-10 text-center max-w-sm w-full border border-surfaceVariant">
                     <div className="w-20 h-20 bg-primaryContainer text-onPrimaryContainer rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-                        <i className="fa-solid fa-check"></i>
+                        <FontAwesomeIcon icon={faCheck} />
                     </div>
                     <h2 className="text-2xl font-normal text-onSurfaceVariant mb-2">Split Complete</h2>
                     <p className="text-secondary mb-8">
@@ -123,7 +126,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                             download={downloadInfo.filename}
                             className="h-12 rounded-pill bg-primary text-onPrimary font-medium flex items-center justify-center gap-2 hover:shadow-elevation-1 transition-all ripple"
                         >
-                            <i className="fa-solid fa-download"></i> Download
+                            <FontAwesomeIcon icon={faDownload} /> Download
                         </a>
                         <button
                             onClick={resetProcessing}
@@ -141,7 +144,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-center p-8 animate-fade-in">
                 <div className="w-20 h-20 bg-surfaceVariant rounded-full flex items-center justify-center text-secondary mb-4">
-                    <i className="fa-solid fa-scissors text-3xl"></i>
+                    <FontAwesomeIcon icon={faScissors} className="text-3xl" />
                 </div>
                 <h2 className="text-2xl font-display text-onSurfaceVariant mb-2">Workspace is Empty</h2>
                 <p className="text-secondary mb-6 max-w-md">
@@ -159,12 +162,12 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
             <div className="flex-1 bg-surface rounded-md3 p-6 md:p-10 border border-surfaceVariant flex flex-col items-center justify-center min-h-[400px]">
                 <div className="text-center animate-scale-in max-w-lg">
                     <div className="w-24 h-24 bg-tertiaryContainer rounded-2xl mx-auto flex items-center justify-center text-4xl text-onTertiaryContainer mb-6 shadow-sm relative group cursor-pointer" onClick={handleInspect}>
-                        <i className="fa-solid fa-layer-group group-hover:scale-110 transition-transform"></i>
+                        <FontAwesomeIcon icon={faLayerGroup} className="group-hover:scale-110 transition-transform" />
                         <div className="absolute -right-2 -bottom-2 bg-onTertiaryContainer text-tertiaryContainer text-xs font-bold px-2 py-1 rounded-full">
                             {targetPages.length}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i className="fa-regular fa-eye"></i>
+                            <FontAwesomeIcon icon={faEye} />
                         </div>
                     </div>
 
@@ -180,7 +183,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                         onClick={handleInspect}
                         className="mb-8 text-sm font-medium text-primary hover:bg-primaryContainer/20 px-4 py-2 rounded-full transition-colors"
                     >
-                        <i className="fa-regular fa-eye mr-2"></i>
+                        <FontAwesomeIcon icon={faEye} className="mr-2" />
                         Inspect Source Pages
                     </button>
 
@@ -188,20 +191,20 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                     <div className="flex justify-center gap-2 opacity-50">
                         {config.mode === 'extract_all' && (
                             <>
-                                <i className="fa-regular fa-file-pdf fa-2x"></i>
-                                <i className="fa-regular fa-file-pdf fa-2x"></i>
-                                <i className="fa-regular fa-file-pdf fa-2x"></i>
+                                <FontAwesomeIcon icon={faFilePdf} size="2x" />
+                                <FontAwesomeIcon icon={faFilePdf} size="2x" />
+                                <FontAwesomeIcon icon={faFilePdf} size="2x" />
                             </>
                         )}
                         {config.mode === 'fixed_number' && (
                             <>
-                                <div className="flex items-center gap-1 border border-current rounded px-2 py-1"><i className="fa-regular fa-file-lines"></i> {config.fixedCount}</div>
-                                <div className="flex items-center gap-1 border border-current rounded px-2 py-1"><i className="fa-regular fa-file-lines"></i> {config.fixedCount}</div>
+                                <div className="flex items-center gap-1 border border-current rounded px-2 py-1"><FontAwesomeIcon icon={faFileLines} /> {config.fixedCount}</div>
+                                <div className="flex items-center gap-1 border border-current rounded px-2 py-1"><FontAwesomeIcon icon={faFileLines} /> {config.fixedCount}</div>
                             </>
                         )}
                         {config.mode === 'by_range' && (
                             <div className="flex items-center gap-2 border border-current rounded px-3 py-2">
-                                <i className="fa-solid fa-crop-simple"></i>
+                                <FontAwesomeIcon icon={faCropSimple} />
                                 <span>{config.rangeInput || 'Define Range'}</span>
                             </div>
                         )}
@@ -236,7 +239,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                             })}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-secondary">
-                            <i className="fa-solid fa-chevron-down text-xs"></i>
+                            <FontAwesomeIcon icon={faChevronDown} className="text-xs" />
                         </div>
                     </div>
                 </div>
@@ -349,7 +352,7 @@ const SplitTool: React.FC<SplitToolProps> = ({ onSplit, isProcessing }) => {
                         }
             `}
                 >
-                    {isProcessing && <i className="fa-solid fa-circle-notch fa-spin"></i>}
+                    {isProcessing && <FontAwesomeIcon icon={faCircleNotch} spin />}
                     {config.mode === 'extract_all' ? 'Extract Pages' : 'Split Pages'}
                 </button>
             </div>

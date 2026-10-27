@@ -2,6 +2,9 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { PDFPage, UploadedFile } from '../types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye } from '@fortawesome/free-regular-svg-icons';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 
 interface PageCardProps {
   page: PDFPage;
@@ -72,7 +75,7 @@ const PageCard: React.FC<PageCardProps> = ({
                     isSelected ? 'bg-primary border-primary scale-110' : 'bg-surface/60 border-onSurfaceVariant/40'
                   }`}
                 >
-                  {isSelected && <i className="fa-solid fa-check text-onPrimary text-[10px]"></i>}
+                  {isSelected && <FontAwesomeIcon icon={faCheck} className="text-onPrimary text-[10px]" />}
                 </div>
               </div>
 
@@ -90,7 +93,7 @@ const PageCard: React.FC<PageCardProps> = ({
                   className="w-8 h-8 rounded-full bg-surface/90 shadow-sm flex items-center justify-center text-onSurfaceVariant hover:text-primary hover:bg-white transition-colors"
                   title="Quick Look"
                 >
-                  <i className="fa-regular fa-eye"></i>
+                  <FontAwesomeIcon icon={faEye} />
                 </button>
               </div>
 

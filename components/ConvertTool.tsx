@@ -5,6 +5,9 @@ import { convertToPdf, convertFromPdf } from '../services/conversionService';
 import { generateThumbnails, formatFileSize, processFileWithPassword } from '../services/pdfService';
 import { isValidRangeFormat, parsePageRange } from '../utils/pdfUtils';
 import { FILE_COLORS, getFileColor } from '../utils/colors';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faFileLines, faFilePdf, faImage } from '@fortawesome/free-regular-svg-icons';
+import { faBolt, faCheck, faChevronDown, faCircleInfo, faCircleNotch, faDownload, faFileExport, faFileImport, faMagicWandSparkles, faTable, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 
 const ConvertTool: React.FC = () => {
     const {
@@ -213,7 +216,7 @@ const ConvertTool: React.FC = () => {
             <div className="flex-1 flex flex-col items-center justify-center animate-scale-in py-12">
                 <div className="bg-surface rounded-md3 p-10 text-center max-w-sm w-full border border-surfaceVariant">
                     <div className="w-20 h-20 bg-primaryContainer text-onPrimaryContainer rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-                        <i className="fa-solid fa-check"></i>
+                        <FontAwesomeIcon icon={faCheck} />
                     </div>
                     <h2 className="text-2xl font-normal text-onSurfaceVariant mb-2">Ready</h2>
                     <p className="text-secondary mb-8">
@@ -226,7 +229,7 @@ const ConvertTool: React.FC = () => {
                             download={downloadInfo.filename}
                             className="h-12 rounded-pill bg-primary text-onPrimary font-medium flex items-center justify-center gap-2 hover:shadow-elevation-1 transition-all ripple"
                         >
-                            <i className="fa-solid fa-download"></i> Download {downloadInfo.isZip ? 'ZIP' : 'File'}
+                            <FontAwesomeIcon icon={faDownload} /> Download {downloadInfo.isZip ? 'ZIP' : 'File'}
                         </a>
                         <button
                             onClick={resetProcessing}
@@ -249,14 +252,14 @@ const ConvertTool: React.FC = () => {
                     onClick={() => setActiveTab('from_pdf')}
                     className={`px-4 py-3 font-medium text-sm transition-all border-b-2 ${activeTab === 'from_pdf' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-onSurfaceVariant'}`}
                 >
-                    <i className="fa-solid fa-file-export mr-2"></i>
+                    <FontAwesomeIcon icon={faFileExport} className="mr-2" />
                     Export from PDF
                 </button>
                 <button
                     onClick={() => setActiveTab('to_pdf')}
                     className={`px-4 py-3 font-medium text-sm transition-all border-b-2 ${activeTab === 'to_pdf' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-onSurfaceVariant'}`}
                 >
-                    <i className="fa-solid fa-file-import mr-2"></i>
+                    <FontAwesomeIcon icon={faFileImport} className="mr-2" />
                     Convert to PDF
                 </button>
             </div>
@@ -288,7 +291,7 @@ const ConvertTool: React.FC = () => {
                                         })}
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-secondary">
-                                        <i className="fa-solid fa-chevron-down text-xs"></i>
+                                        <FontAwesomeIcon icon={faChevronDown} className="text-xs" />
                                     </div>
                                 </div>
                             </div>
@@ -345,10 +348,10 @@ const ConvertTool: React.FC = () => {
                                 <label className="text-xs font-medium text-secondary uppercase tracking-wider mb-2 block">Output Format</label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {[
-                                        { id: 'jpg', icon: 'fa-image', label: 'JPG Images', desc: 'Best for photos' },
-                                        { id: 'png', icon: 'fa-image', label: 'PNG Images', desc: 'Lossless quality' },
-                                        { id: 'text', icon: 'fa-file-lines', label: 'Plain Text', desc: 'Extract content' },
-                                        { id: 'csv', icon: 'fa-table', label: 'CSV Data', desc: 'Raw data dump' },
+                                        { id: 'jpg', icon: faImage, label: 'JPG Images', desc: 'Best for photos' },
+                                        { id: 'png', icon: faImage, label: 'PNG Images', desc: 'Lossless quality' },
+                                        { id: 'text', icon: faFileLines, label: 'Plain Text', desc: 'Extract content' },
+                                        { id: 'csv', icon: faTable, label: 'CSV Data', desc: 'Raw data dump' },
                                     ].map((opt) => (
                                         <button
                                             key={opt.id}
@@ -356,7 +359,7 @@ const ConvertTool: React.FC = () => {
                                             className={`p-3 rounded-xl border text-left transition-all ${targetFormat === opt.id ? 'bg-primaryContainer border-primaryContainer text-onPrimaryContainer' : 'border-outline/20 hover:bg-surfaceVariant/30'}`}
                                         >
                                             <div className="flex items-center gap-2 mb-1">
-                                                <i className={`fa-regular ${opt.icon}`}></i>
+                                                <FontAwesomeIcon icon={opt.icon} />
                                                 <span className="font-medium text-sm">{opt.label}</span>
                                             </div>
                                             <p className="text-[10px] opacity-70 ml-6 leading-tight">{opt.desc}</p>
@@ -370,7 +373,7 @@ const ConvertTool: React.FC = () => {
                                 disabled={!isExportValid() || status === AppStatus.PROCESSING}
                                 className="w-full h-12 rounded-pill bg-primary text-onPrimary font-medium flex items-center justify-center gap-2 hover:shadow-elevation-1 transition-all ripple disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                             >
-                                {status === AppStatus.PROCESSING ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-bolt"></i>}
+                                {status === AppStatus.PROCESSING ? <FontAwesomeIcon icon={faCircleNotch} spin /> : <FontAwesomeIcon icon={faBolt} />}
                                 {pagesToExport.length > 0 ? `Export ${pagesToExport.length} Pages` : 'Export'}
                             </button>
                         </div>
@@ -378,7 +381,7 @@ const ConvertTool: React.FC = () => {
                         <div className="w-full md:w-80 flex flex-col gap-4">
                             {/* Info Card */}
                             <div className="p-6 bg-surfaceVariant/30 rounded-md3 border border-surfaceVariant/50">
-                                <h4 className="font-medium text-sm text-onSurfaceVariant mb-3"><i className="fa-solid fa-circle-info mr-2"></i>Format Guide</h4>
+                                <h4 className="font-medium text-sm text-onSurfaceVariant mb-3"><FontAwesomeIcon icon={faCircleInfo} className="mr-2" />Format Guide</h4>
                                 <ul className="space-y-3 text-xs text-secondary">
                                     <li className="flex gap-2">
                                         <span className="font-bold text-primary">•</span>
@@ -420,7 +423,7 @@ const ConvertTool: React.FC = () => {
                             />
 
                             <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-colors ${isDragging ? 'bg-primaryContainer text-onPrimaryContainer' : 'bg-surfaceVariant text-onSurfaceVariant'}`}>
-                                <i className="fa-solid fa-magic-wand-sparkles text-3xl"></i>
+                                <FontAwesomeIcon icon={faMagicWandSparkles} className="text-3xl" />
                             </div>
 
                             <h3 className="text-2xl font-display text-onSurfaceVariant mb-2">Convert to PDF</h3>
@@ -439,7 +442,7 @@ const ConvertTool: React.FC = () => {
                         </div>
 
                         <div className="mt-8 max-w-2xl w-full p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex gap-3 text-yellow-800 text-sm">
-                            <i className="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                            <FontAwesomeIcon icon={faTriangleExclamation} className="mt-0.5" />
                             <div>
                                 <p className="font-bold mb-1">Conversion Fidelity Warning</p>
                                 <p>
@@ -470,7 +473,7 @@ const ConvertTool: React.FC = () => {
                                     {convertedFiles.map((file) => (
                                         <div key={file.id} className="bg-surface p-4 rounded-xl border border-outline/20 flex items-center gap-4 shadow-sm">
                                             <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-xl">
-                                                <i className="fa-regular fa-file-pdf"></i>
+                                                <FontAwesomeIcon icon={faFilePdf} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-medium text-onSurfaceVariant truncate" title={file.name}>{file.name}</div>
@@ -484,7 +487,7 @@ const ConvertTool: React.FC = () => {
                                                     className="w-9 h-9 flex items-center justify-center rounded-full text-secondary hover:bg-surfaceVariant transition-colors"
                                                     title="Preview PDF"
                                                 >
-                                                    <i className="fa-regular fa-eye"></i>
+                                                    <FontAwesomeIcon icon={faEye} />
                                                 </a>
                                                 <a
                                                     href={file.url}
@@ -492,7 +495,7 @@ const ConvertTool: React.FC = () => {
                                                     className="w-9 h-9 flex items-center justify-center rounded-full text-primary hover:bg-primaryContainer hover:text-onPrimaryContainer transition-colors"
                                                     title="Download PDF"
                                                 >
-                                                    <i className="fa-solid fa-download"></i>
+                                                    <FontAwesomeIcon icon={faDownload} />
                                                 </a>
                                             </div>
                                         </div>

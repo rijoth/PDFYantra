@@ -1,4 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCloudArrowUp, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 interface FileUploaderProps {
   onFilesSelected: (files: File[]) => void;
@@ -64,7 +66,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesSelected, disabled, 
                 disabled={disabled}
                 onChange={handleFileInputChange}
             />
-            <i className="fa-solid fa-plus"></i> Add PDF
+            <FontAwesomeIcon icon={faPlus} /> Add PDF
         </button>
     );
   }
@@ -100,7 +102,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesSelected, disabled, 
           w-14 h-14 rounded-full flex items-center justify-center transition-colors duration-300
           ${isDragging ? 'bg-primaryContainer text-onPrimaryContainer' : 'bg-surfaceVariant text-onSurfaceVariant'}
         `}>
-          <i className="fa-solid fa-cloud-arrow-up text-2xl"></i>
+          <FontAwesomeIcon icon={faCloudArrowUp} className="text-2xl" />
         </div>
         
         <div className="space-y-1">

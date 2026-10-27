@@ -13,9 +13,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Lato', 'sans-serif'],
-        display: ['Cinzel', 'serif'],
-        ui: ['Google Sans', 'sans-serif'],
+        sans: ['Lato', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        display: ['Cinzel', 'Georgia', '"Times New Roman"', 'serif'],
+        ui: ['"Google Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
       colors: {
         primary: 'rgb(var(--color-primary) / <alpha-value>)',

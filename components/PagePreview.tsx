@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { renderPageHighRes } from '../services/pdfService';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronLeft, faChevronRight, faCircleNotch, faMinus, faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const PagePreview: React.FC = () => {
   const { previewPageId, setPreviewPageId, setPreviewUrl, pages, files } = usePdfStore();
@@ -107,7 +109,7 @@ const PagePreview: React.FC = () => {
                 onClick={handleClose}
                 className="w-10 h-10 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant transition-colors"
              >
-                <i className="fa-solid fa-xmark text-lg"></i>
+                <FontAwesomeIcon icon={faXmark} className="text-lg" />
              </button>
            </div>
         </div>
@@ -121,7 +123,7 @@ const PagePreview: React.FC = () => {
                   className="p-2 rounded-lg hover:bg-surfaceVariant text-secondary disabled:opacity-30"
                   title="Zoom Out"
                 >
-                  <i className="fa-solid fa-minus"></i>
+                  <FontAwesomeIcon icon={faMinus} />
                 </button>
                 <span className="text-xs font-mono w-12 text-center text-secondary">{Math.round(zoom * 100)}%</span>
                 <button 
@@ -130,7 +132,7 @@ const PagePreview: React.FC = () => {
                   className="p-2 rounded-lg hover:bg-surfaceVariant text-secondary disabled:opacity-30"
                   title="Zoom In"
                 >
-                  <i className="fa-solid fa-plus"></i>
+                  <FontAwesomeIcon icon={faPlus} />
                 </button>
              </div>
 
@@ -140,14 +142,14 @@ const PagePreview: React.FC = () => {
                   disabled={currentPageIndex === 0}
                   className="w-8 h-8 rounded-full border border-outline/30 flex items-center justify-center hover:bg-surfaceVariant disabled:opacity-30 text-onSurfaceVariant"
                 >
-                   <i className="fa-solid fa-chevron-left"></i>
+                   <FontAwesomeIcon icon={faChevronLeft} />
                 </button>
                 <button 
                   onClick={handleNext}
                   disabled={currentPageIndex === pages.length - 1}
                   className="w-8 h-8 rounded-full border border-outline/30 flex items-center justify-center hover:bg-surfaceVariant disabled:opacity-30 text-onSurfaceVariant"
                 >
-                   <i className="fa-solid fa-chevron-right"></i>
+                   <FontAwesomeIcon icon={faChevronRight} />
                 </button>
              </div>
         </div>
@@ -159,7 +161,7 @@ const PagePreview: React.FC = () => {
         >
           {loading ? (
              <div className="flex flex-col items-center gap-3 text-primary">
-                <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+                <FontAwesomeIcon icon={faCircleNotch} spin className="text-3xl" />
                 <span className="text-sm font-medium">Rendering HD Preview...</span>
              </div>
           ) : imageUrl ? (

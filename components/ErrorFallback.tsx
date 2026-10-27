@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { clearSession } from '../services/storageService';
 
 interface ErrorFallbackProps {
@@ -95,7 +97,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
       <div role="alert" className={cardClasses}>
         <div className="flex items-start gap-4">
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
-            <i className="fa-solid fa-triangle-exclamation text-lg" aria-hidden="true"></i>
+            <FontAwesomeIcon icon={faTriangleExclamation} className="text-lg" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <h2

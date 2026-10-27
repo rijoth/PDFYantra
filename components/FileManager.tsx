@@ -16,6 +16,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { usePdfStore } from '../store/usePdfStore';
 import { formatFileSize } from '../services/pdfService';
 import { UploadedFile } from '../types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons';
+import { faGripVertical, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 interface FileManagerProps {
     onClose: () => void;
@@ -52,7 +55,7 @@ const FileRow: React.FC<FileRowProps> = ({ fileId, file, pageCount, onRemove }) 
                 {...listeners}
                 className="cursor-grab text-secondary hover:text-onSurfaceVariant px-1 touch-none"
             >
-                <i className="fa-solid fa-grip-vertical"></i>
+                <FontAwesomeIcon icon={faGripVertical} />
             </div>
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-sm" style={{ backgroundColor: file.color }}>
                 PDF
@@ -66,7 +69,7 @@ const FileRow: React.FC<FileRowProps> = ({ fileId, file, pageCount, onRemove }) 
                 className="w-8 h-8 flex items-center justify-center text-secondary hover:text-error hover:bg-error/10 rounded-full transition-colors"
                 title="Remove File"
             >
-                <i className="fa-regular fa-trash-can"></i>
+                <FontAwesomeIcon icon={faTrashCan} />
             </button>
         </div>
     );
@@ -121,7 +124,7 @@ const FileManager: React.FC<FileManagerProps> = ({ onClose }) => {
                 <div className="p-6 border-b border-surfaceVariant flex justify-between items-center bg-surface">
                     <h3 className="text-xl font-display text-onSurfaceVariant">Manage Files</h3>
                      <button onClick={onClose} aria-label="Close file manager" className="w-8 h-8 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant">
-                        <i className="fa-solid fa-xmark"></i>
+                        <FontAwesomeIcon icon={faXmark} />
                     </button>
                 </div>
                 

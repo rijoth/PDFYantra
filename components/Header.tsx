@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCopy, faFilePdf } from '@fortawesome/free-regular-svg-icons';
+import { faMoon, faRotateLeft, faRotateRight, faShieldHalved, faSun, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const TopAppBar: React.FC = () => {
   // Scoped selectors: primitives only re-render when these actually change,
@@ -104,7 +107,7 @@ const TopAppBar: React.FC = () => {
               title="Undo (Ctrl+Z)"
               aria-label="Undo action"
             >
-              <i className="fa-solid fa-rotate-left text-sm"></i>
+              <FontAwesomeIcon icon={faRotateLeft} className="text-sm" />
             </button>
             <button
               onClick={() => redo()}
@@ -113,18 +116,18 @@ const TopAppBar: React.FC = () => {
               title="Redo (Ctrl+Y)"
               aria-label="Redo action"
             >
-              <i className="fa-solid fa-rotate-right text-sm"></i>
+              <FontAwesomeIcon icon={faRotateRight} className="text-sm" />
             </button>
           </div>
 
           <div className="bg-surfaceVariant/50 border border-outline/20 rounded-full px-4 py-1.5 flex items-center gap-3 text-xs font-medium text-onSurfaceVariant transition-all hover:bg-surfaceVariant">
             <span className="flex items-center gap-1.5">
-              <i className="fa-regular fa-file-pdf text-primary"></i>
+              <FontAwesomeIcon icon={faFilePdf} className="text-primary" />
               {fileCount} {fileCount === 1 ? 'File' : 'Files'}
             </span>
             <span className="w-1 h-1 rounded-full bg-outline/40"></span>
             <span className="flex items-center gap-1.5">
-              <i className="fa-regular fa-copy text-primary"></i>
+              <FontAwesomeIcon icon={faCopy} className="text-primary" />
               {pageCount} {pageCount === 1 ? 'Page' : 'Pages'}
             </span>
             <button
@@ -133,7 +136,7 @@ const TopAppBar: React.FC = () => {
               title="Clear Workspace"
               aria-label="Clear Workspace"
             >
-              <i className="fa-solid fa-xmark"></i>
+              <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
         </div>
@@ -147,11 +150,14 @@ const TopAppBar: React.FC = () => {
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
-          <i className={`fa-solid ${isDark ? 'fa-sun text-yellow-400' : 'fa-moon text-secondary'} text-lg transition-transform duration-300 ${isDark ? 'rotate-180' : 'rotate-0'}`}></i>
+          <FontAwesomeIcon
+            icon={isDark ? faSun : faMoon}
+            className={`text-lg transition-transform duration-300 ${isDark ? 'text-yellow-400 rotate-180' : 'text-secondary rotate-0'}`}
+          />
         </button>
 
         <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-primaryContainer/30 rounded-pill border border-transparent hover:border-primaryContainer/50 transition-colors cursor-help" title="All processing happens in your browser">
-          <i className="fa-solid fa-shield-halved text-primary text-sm"></i>
+          <FontAwesomeIcon icon={faShieldHalved} className="text-primary text-sm" />
         </div>
       </div>
     </header>

@@ -10,6 +10,8 @@ import { usePdfStore } from './store/usePdfStore';
 import { useGlobalErrorHandlers } from './hooks/useGlobalErrorHandlers';
 import { loadSession } from './services/storageService';
 import { AppStatus } from './types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleNotch } from '@fortawesome/free-solid-svg-icons';
 
 // Code-split heavy tool components on demand
 const OrganizerTool = lazy(() => import('./components/OrganizerTool'));
@@ -19,7 +21,7 @@ const CompressTool = lazy(() => import('./components/CompressTool'));
 
 const ToolLoader = () => (
   <div className="h-[50vh] w-full flex flex-col items-center justify-center text-primary gap-3">
-    <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+    <FontAwesomeIcon icon={faCircleNotch} spin className="text-3xl" />
     <span className="text-sm font-medium text-secondary">Loading tool...</span>
   </div>
 );
@@ -89,7 +91,7 @@ const App: React.FC = () => {
   if (!isInitialized) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background text-primary">
-        <i className="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+        <FontAwesomeIcon icon={faCircleNotch} spin className="text-3xl" />
       </div>
     );
   }

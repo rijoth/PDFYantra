@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faClockRotateLeft, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const SessionIndicator: React.FC = () => {
     const hasRecoveredSession = usePdfStore(s => s.hasRecoveredSession);
@@ -39,7 +41,7 @@ const SessionIndicator: React.FC = () => {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <i className="fa-solid fa-clock-rotate-left text-lg"></i>
+                            <FontAwesomeIcon icon={faClockRotateLeft} className="text-lg" />
                         </div>
                         <div>
                             <h4 className="font-semibold text-foreground leading-tight">Session Restored</h4>
@@ -53,7 +55,7 @@ const SessionIndicator: React.FC = () => {
                         }}
                         className="text-foreground/40 hover:text-foreground transition-colors p-1"
                     >
-                        <i className="fa-solid fa-xmark"></i>
+                        <FontAwesomeIcon icon={faXmark} />
                     </button>
                 </div>
 

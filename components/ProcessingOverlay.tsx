@@ -2,6 +2,8 @@
 import React from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { AppStatus } from '../types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilePdf, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 
 const ProcessingOverlay: React.FC = () => {
     const status = usePdfStore(s => s.status);
@@ -22,7 +24,7 @@ const ProcessingOverlay: React.FC = () => {
                         <div className="w-20 h-20 border-4 border-primary/20 rounded-full"></div>
                         <div className="absolute inset-0 w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                         <div className="absolute inset-0 flex items-center justify-center scale-110">
-                            <i className="fa-solid fa-file-pdf text-primary text-3xl animate-pulse"></i>
+                            <FontAwesomeIcon icon={faFilePdf} className="text-primary text-3xl animate-pulse" />
                         </div>
                     </div>
 
@@ -55,7 +57,7 @@ const ProcessingOverlay: React.FC = () => {
                     </div>
 
                     <div className="mt-10 flex items-center gap-2 text-xs text-secondary/60 font-medium">
-                        <i className="fa-solid fa-shield-halved"></i>
+                        <FontAwesomeIcon icon={faShieldHalved} />
                         <span>End-to-end private processing</span>
                     </div>
                 </div>

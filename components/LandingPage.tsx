@@ -3,6 +3,8 @@ import { usePdfStore } from '../store/usePdfStore';
 import { generateThumbnails, processFileWithPassword } from '../services/pdfService';
 import { ToolType, UploadedFile, PDFPage } from '../types';
 import { FILE_COLORS, getFileColor } from '../utils/colors';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleNotch, faFolderOpen, faLayerGroup, faPlus, faScissors } from '@fortawesome/free-solid-svg-icons';
 
 interface LandingPageProps {
     onNavigate: (tool: ToolType) => void;
@@ -98,9 +100,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             className="h-14 px-8 rounded-pill bg-primary text-onPrimary font-medium text-lg hover:shadow-elevation-1 transition-all ripple flex items-center gap-3 mx-auto md:mx-0"
                         >
                             {isProcessing ? (
-                                <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                <FontAwesomeIcon icon={faCircleNotch} spin />
                             ) : (
-                                <i className="fa-solid fa-plus"></i>
+                                <FontAwesomeIcon icon={faPlus} />
                             )}
                             {isProcessing ? 'Processing...' : 'Load Workspace'}
                         </button>
@@ -118,7 +120,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 w-64 h-64 bg-white rounded-[32px] shadow-sm flex items-center justify-center text-primaryContainer transition-all duration-500
                 ${isDragging ? 'rotate-3 scale-110' : 'rotate-0'}
             `}>
-                        <i className="fa-solid fa-folder-open text-[8rem]"></i>
+                        <FontAwesomeIcon icon={faFolderOpen} className="text-[8rem]" />
                     </div>
                 </div>
             </div>
@@ -131,7 +133,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 >
                     <div className="relative z-10">
                         <div className="w-12 h-12 rounded-full bg-secondaryContainer text-onSecondaryContainer flex items-center justify-center mb-4 text-xl">
-                            <i className="fa-solid fa-layer-group"></i>
+                            <FontAwesomeIcon icon={faLayerGroup} />
                         </div>
                         <h3 className="text-xl font-medium text-onSurfaceVariant mb-2">Organizer Mode</h3>
                         <p className="text-secondary text-sm">Rearrange, rotate, and delete pages from multiple files in a single view.</p>
@@ -143,7 +145,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 >
                     <div className="relative z-10">
                         <div className="w-12 h-12 rounded-full bg-tertiaryContainer text-onTertiaryContainer flex items-center justify-center mb-4 text-xl">
-                            <i className="fa-solid fa-scissors"></i>
+                            <FontAwesomeIcon icon={faScissors} />
                         </div>
                         <h3 className="text-xl font-medium text-onSurfaceVariant mb-2">Workspace Splitter</h3>
                         <p className="text-secondary text-sm">Create new documents by slicing up your current workspace arrangement.</p>
