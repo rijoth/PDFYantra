@@ -9,6 +9,7 @@ import { UploadedFile, PDFPage, ConvertFormat } from '../types';
 import { pdfjs } from './pdfjsSetup';
 import { getFileBuffer } from './pdfCache';
 import { sanitizeHtml } from '../utils/sanitizeHtml';
+import { effectiveRotation } from '../utils/rotation';
 
 /**
  * Helper to create a hidden container for DOM rendering
@@ -313,7 +314,12 @@ export const convertFromPdf = async (
       const doc = await getDoc(pageMeta.fileId);
       const page = await doc.getPage(pageMeta.pageIndex + 1);
 
-      const viewport = page.getViewport({ scale: 2.0 });
+      // PDF.js treats `rotation` as absolute, so combine the page's intrinsic
+      // /Rotate with the rotation applied in the Organizer.
+      const viewport = page.getViewport({
+        scale: 2.0,
+        rotation: effectiveRotation(page.rotate, pageMeta.rotation)
+      });
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       if (!context) throw new Error("Canvas context failed");
@@ -345,7 +351,10 @@ export const convertFromPdf = async (
       const doc = await getDoc(pageMeta.fileId);
       const page = await doc.getPage(pageMeta.pageIndex + 1);
 
-      const viewport = page.getViewport({ scale: 2.0 }); // High res
+      const viewport = page.getViewport({
+        scale: 2.0, // High res
+        rotation: effectiveRotation(page.rotate, pageMeta.rotation)
+      });
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       if (!context) continue;

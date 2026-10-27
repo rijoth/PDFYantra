@@ -269,20 +269,27 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       const nextFiles = new Map(currentState.files);
       nextFiles.set(fileId, updatedUploadedFile);
 
-      // Update pages: We need to preserve the relative order/position of the pages
-      // belonging to this file, but their content has changed.
+      // Update pages slot-wise: the k-th workspace page belonging to this file
+      // is replaced by the k-th page of the regenerated document. This keeps
+      // the workspace positions (including interleaving with other files)
+      // intact even when pages were reordered or deleted. Rotation is baked
+      // into the new file, so the workspace rotation resets to 0.
+      let slot = 0;
       const nextAllPages = currentState.pages.map(p => {
         if (p.fileId === fileId) {
-          // Revoke old blob URL
-          if (p.thumbnailUrl && p.thumbnailUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(p.thumbnailUrl);
-          }
-          // Find corresponding new page by index
-          const match = newPages.find(np => np.pageIndex === p.pageIndex);
+          const match = newPages[slot];
+          slot++;
           if (match) {
+            // Revoke old blob URL
+            if (p.thumbnailUrl && p.thumbnailUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(p.thumbnailUrl);
+            }
             return {
               ...p,
-              thumbnailUrl: match.thumbnailUrl
+              pageIndex: match.pageIndex,
+              pageNumber: match.pageNumber,
+              thumbnailUrl: match.thumbnailUrl,
+              rotation: 0
             };
           }
         }

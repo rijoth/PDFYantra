@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { formatFileSize, compressPdfFile, generateThumbnails } from '../services/pdfService';
-import { CompressionSettings, CompressionResult, UploadedFile, AppStatus } from '../types';
+import { CompressionSettings, CompressionResult, PDFPage, UploadedFile, AppStatus } from '../types';
 import { getFileColor } from '../utils/colors';
 
 const COMPRESSION_PROFILES: Record<string, CompressionSettings> = {
@@ -34,6 +34,8 @@ const CompressTool: React.FC = () => {
     // Results State
     const [results, setResults] = useState<Map<string, CompressionResult>>(new Map());
     const [isSuccess, setIsSuccess] = useState(false);
+    // Files selected for compression that have no pages left in the workspace.
+    const [skippedFiles, setSkippedFiles] = useState<string[]>([]);
 
     // Lazily-created, cached object URLs for compressed blobs.
     // Keyed by originalFileId so we never recreate a URL for the same result
@@ -73,6 +75,26 @@ const CompressTool: React.FC = () => {
         return counts;
     }, [pages]);
 
+    // Files whose workspace pages no longer match the original file (reordered,
+    // deleted, duplicated, or rotated). Used to flag size savings that only
+    // cover the edited page set.
+    const editedFileIds = useMemo(() => {
+        const pagesByFile = new Map<string, PDFPage[]>();
+        pages.forEach(p => {
+            const list = pagesByFile.get(p.fileId);
+            if (list) list.push(p);
+            else pagesByFile.set(p.fileId, [p]);
+        });
+
+        const edited = new Set<string>();
+        pagesByFile.forEach((list, fileId) => {
+            const matchesOriginalOrder = list.every((p, i) => p.pageIndex === i);
+            const anyRotated = list.some(p => p.rotation !== 0);
+            if (!matchesOriginalOrder || anyRotated) edited.add(fileId);
+        });
+        return edited;
+    }, [pages]);
+
     const toggleFile = (id: string) => {
         const next = new Set(selectedFileIds);
         if (next.has(id)) next.delete(id);
@@ -90,13 +112,23 @@ const CompressTool: React.FC = () => {
         setStatus(AppStatus.PROCESSING);
         setError(null);
         setResults(new Map()); // Clear previous results
+        setSkippedFiles([]);
 
         try {
             const selectedFiles = filesArray.filter(f => selectedFileIds.has(f.id));
             const newResults = new Map<string, CompressionResult>();
+            const skipped: string[] = [];
 
             for (const file of selectedFiles) {
                 setProcessingFileId(file.id);
+
+                // Compress exactly what the Organizer shows for this file:
+                // workspace order, rotation and deleted pages included.
+                const filePages = pages.filter(p => p.fileId === file.id);
+                if (filePages.length === 0) {
+                    skipped.push(file.name);
+                    continue;
+                }
 
                 const result = await compressPdfFile(
                     file.file,
@@ -105,7 +137,8 @@ const CompressTool: React.FC = () => {
                     (curr, total) => {
                         setProcessingProgress(Math.round((curr / total) * 100));
                         setProcessingMessage(`Compressing ${file.name}... (Page ${curr}/${total})`);
-                    }
+                    },
+                    filePages
                 );
 
                 newResults.set(file.id, {
@@ -115,6 +148,14 @@ const CompressTool: React.FC = () => {
                     newSize: result.blob.size,
                     originalSize: file.size
                 });
+            }
+
+            setSkippedFiles(skipped);
+
+            if (newResults.size === 0) {
+                setProcessingMessage(null);
+                setError(`Cannot compress ${skipped.join(', ')}: no pages left in the workspace.`);
+                return;
             }
 
             setResults(newResults);
@@ -198,6 +239,13 @@ const CompressTool: React.FC = () => {
                     </button>
                 </div>
 
+                {skippedFiles.length > 0 && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-800">
+                        <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                        Skipped {skippedFiles.join(', ')}: no pages left in the workspace.
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-4">
                     {Array.from(results.values()).map((res: CompressionResult) => {
                         const savings = res.originalSize - res.newSize;
@@ -223,6 +271,9 @@ const CompressTool: React.FC = () => {
                                         )}
                                         {!isSmaller && <span className="text-orange-600 text-xs">Size increased (Try aggressive mode)</span>}
                                     </div>
+                                    {editedFileIds.has(res.originalFileId) && (
+                                        <p className="text-xs text-secondary mt-1">Based on edited pages</p>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-3 w-full md:w-auto">
@@ -327,6 +378,13 @@ const CompressTool: React.FC = () => {
                             <p className="font-bold mb-0.5">Compression Failed</p>
                             <p className="opacity-80">{errorMessage}</p>
                         </div>
+                    </div>
+                )}
+
+                {skippedFiles.length > 0 && (
+                    <div className="mb-6 p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-800">
+                        <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                        Skipped {skippedFiles.join(', ')}: no pages left in the workspace.
                     </div>
                 )}
 

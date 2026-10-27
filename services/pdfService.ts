@@ -1,9 +1,10 @@
 
 
-import { PDFDocument, degrees } from 'pdf-lib';
+import { PDFDocument, degrees, type PDFImage } from 'pdf-lib';
 import JSZip from 'jszip';
 import { UploadedFile, PDFPage, SplitConfig } from '../types';
 import { parsePageRange } from '../utils/pdfUtils';
+import { effectiveRotation } from '../utils/rotation';
 import { getFileBuffer, getCachedDoc } from './pdfCache';
 import { pdfjs } from './pdfjsSetup';
 export { pdfjs };
@@ -255,15 +256,20 @@ export const regenerateThumbnailsForFile = async (
 export const renderPageHighRes = async (
   file: UploadedFile,
   pageIndex: number,
-  rotation: number
+  workspaceRotation: number
 ): Promise<string> => {
   const pdf = await getCachedDoc(file);
   const page = await pdf.getPage(pageIndex + 1); // 1-based index
 
   // Calculate viewport with rotation
-  // We render at scale 2.0 for crispness on high DPI screens, but cap dimension to prevent canvas errors
+  // We render at scale 2.0 for crispness on high DPI screens, but cap dimension to prevent canvas errors.
+  // PDF.js treats `rotation` as absolute (it replaces the page's intrinsic
+  // /Rotate), so the workspace rotation must be added to it.
   const scale = 2.0;
-  const viewport = page.getViewport({ scale, rotation });
+  const viewport = page.getViewport({
+    scale,
+    rotation: effectiveRotation(page.rotate, workspaceRotation)
+  });
 
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
@@ -482,7 +488,8 @@ export const compressPdfFile = async (
   file: File,
   quality: number, // 0 to 1
   scale: number,   // e.g. 1.0 = 72dpi, 2.0 = 144dpi
-  onProgress: (current: number, total: number) => void
+  onProgress: (current: number, total: number) => void,
+  pages?: PDFPage[] // workspace page order/rotation; omitted = whole file as-is
 ): Promise<{ blob: Blob; filename: string }> => {
   const arrayBuffer = await getFileBuffer(file);
   let doc;
@@ -497,45 +504,70 @@ export const compressPdfFile = async (
     throw e;
   }
 
-  const numPages = doc.numPages;
+  // When the workspace page list is provided it defines the output: order and
+  // rotation come from it, deleted pages stay absent. Without it, keep the
+  // original behaviour and compress the whole file in its own order.
+  const requestedPages: Array<{ pageIndex: number; rotation: number }> = pages
+    ? pages.map(p => ({ pageIndex: p.pageIndex, rotation: p.rotation }))
+    : Array.from({ length: doc.numPages }, (_, i) => ({ pageIndex: i, rotation: 0 }));
+
+  if (requestedPages.length === 0) {
+    throw new Error("No pages to compress. The workspace has no pages left for this file.");
+  }
+
   const newPdf = await PDFDocument.create();
 
-  for (let i = 1; i <= numPages; i++) {
-    onProgress(i, numPages);
-    const page = await doc.getPage(i);
+  // Renders are cached by (pageIndex, effective rotation) so a duplicated page
+  // is rasterized and embedded once, then drawn onto multiple output pages.
+  const renderedPages = new Map<string, { image: PDFImage; width: number; height: number }>();
 
-    // Determine viewport
-    const viewport = page.getViewport({ scale });
+  for (let i = 0; i < requestedPages.length; i++) {
+    onProgress(i + 1, requestedPages.length);
+    const { pageIndex, rotation: workspaceRotation } = requestedPages[i];
+    const page = await doc.getPage(pageIndex + 1);
+    const rotation = effectiveRotation(page.rotate, workspaceRotation);
 
-    // Render to canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error("Canvas context failed");
+    // Page geometry comes from the rotated viewport at scale 1, independent of
+    // the quality scale, so 90/270 swap width and height correctly.
+    const baseViewport = page.getViewport({ scale: 1, rotation });
+    const cacheKey = `${pageIndex}:${rotation}`;
 
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    let rendered = renderedPages.get(cacheKey);
+    if (!rendered) {
+      const viewport = page.getViewport({ scale, rotation });
 
-    // Convert directly to Blob without base64 intermediate allocations
-    const imgBlob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', quality));
-    if (!imgBlob) throw new Error("Failed to compress page");
+      // Render to canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Canvas context failed");
 
-    const imgBytes = new Uint8Array(await imgBlob.arrayBuffer());
+      await page.render({ canvasContext: ctx, viewport }).promise;
 
-    // Embed in new PDF
-    const jpgImage = await newPdf.embedJpg(imgBytes);
-    const newPage = newPdf.addPage([viewport.width, viewport.height]);
-    newPage.drawImage(jpgImage, {
+      // Convert directly to Blob without base64 intermediate allocations
+      const imgBlob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', quality));
+      if (!imgBlob) throw new Error("Failed to compress page");
+
+      const imgBytes = new Uint8Array(await imgBlob.arrayBuffer());
+      const jpgImage = await newPdf.embedJpg(imgBytes);
+
+      rendered = { image: jpgImage, width: baseViewport.width, height: baseViewport.height };
+      renderedPages.set(cacheKey, rendered);
+
+      // Cleanup
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+
+    const newPage = newPdf.addPage([rendered.width, rendered.height]);
+    newPage.drawImage(rendered.image, {
       x: 0,
       y: 0,
-      width: viewport.width,
-      height: viewport.height
+      width: rendered.width,
+      height: rendered.height
     });
-
-    // Cleanup
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.width = 0;
-    canvas.height = 0;
   }
 
   const pdfBytes = await newPdf.save();
