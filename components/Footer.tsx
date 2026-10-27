@@ -1,6 +1,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import { TAGLINE, TRUST_NOTE } from '../constants/copy';
 
 const Footer: React.FC = () => {
   return (
@@ -11,7 +12,7 @@ const Footer: React.FC = () => {
         <div className="flex items-center gap-2 opacity-80">
           <span>&copy; PDFYantra 2026</span>
           <span className="hidden md:inline px-1">•</span>
-          <span className="hidden md:inline">Privacy-First PDF Tools</span>
+          <span className="hidden md:inline">{TAGLINE}</span>
         </div>
 
         {/* Links */}
@@ -26,8 +27,11 @@ const Footer: React.FC = () => {
             <FontAwesomeIcon icon={faGithub} className="text-lg group-hover:scale-110 transition-transform duration-200" />
           </a>
         </div>
-
       </div>
+
+      <p className="max-w-3xl mx-auto mt-4 px-4 text-center text-xs leading-relaxed text-secondary/80">
+        {TRUST_NOTE}
+      </p>
     </footer>
   );
 };

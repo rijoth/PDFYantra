@@ -4,6 +4,7 @@ import { usePdfStore } from '../store/usePdfStore';
 import { AppStatus } from '../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilePdf, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
+import { LOCAL_PROCESSING } from '../constants/copy';
 
 const ProcessingOverlay: React.FC = () => {
     const status = usePdfStore(s => s.status);
@@ -58,7 +59,7 @@ const ProcessingOverlay: React.FC = () => {
 
                     <div className="mt-10 flex items-center gap-2 text-xs text-secondary/60 font-medium">
                         <FontAwesomeIcon icon={faShieldHalved} />
-                        <span>End-to-end private processing</span>
+                        <span>{LOCAL_PROCESSING}</span>
                     </div>
                 </div>
             </div>

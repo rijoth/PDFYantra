@@ -1,8 +1,8 @@
 # PDFYantra 📄✨
 
-**Secure, Client-Side PDF Tools running directly in your browser.**
+**Private PDF tools that run in your browser.**
 
-PDFYantra provides a suite of PDF manipulation tools that respect your privacy. All processing happens locally on your device—no files are ever uploaded to a server.
+PDFYantra is a client-side PDF workspace. PDF bytes and PDF passwords are processed in your browser and are never uploaded or transmitted. There are no accounts, no server-side processing, and no tracking scripts.
 
 ## 🛠 Features
 
@@ -12,7 +12,7 @@ PDFYantra provides a suite of PDF manipulation tools that respect your privacy. 
     *   Convert Images, Office Docs, and HTML to PDF.
     *   Export PDF pages to Images (JPG/PNG), Text, or CSV.
 *   **Compress:** Reduce PDF file size with adjustable quality settings.
-*   **Privacy First:** Powered by WebAssembly and modern browser APIs to ensure your data never leaves your computer.
+*   **Private by design:** PDF processing happens in your browser. The PDF.js worker is bundled with the app, so no CDN is required for PDF work.
 
 ## ✨ Recent Updates
 
@@ -20,8 +20,18 @@ PDFYantra provides a suite of PDF manipulation tools that respect your privacy. 
 *   **Memory Efficiency:** Improved memory management by fixing object URL leaks.
 *   **Faster UI:** Optimized state handling for smoother reordering of large documents.
 *   **High-Res Previews:** Faster page previews with a new intelligent document cache.
-*   **Offline Support:** The PDF.js worker is now bundled locally for better privacy.
+*   **Bundled PDF.js Worker:** The PDF.js worker is bundled with the app, so no CDN is required for PDF processing.
 *   **Optimized Storage:** Smooth background saving with debounced IndexedDB writes.
+
+## 🔒 Privacy and data handling
+
+*   PDF bytes and PDF passwords are processed in the browser and are not uploaded or transmitted.
+*   There are no accounts, no server-side processing, and no analytics or telemetry scripts in the repository.
+*   The PDF.js worker is bundled with the app, so no CDN is required for PDF processing.
+*   Fonts and icons are served by the app itself. No third-party requests.
+*   The workspace is stored unencrypted in the browser's IndexedDB (`PDFYantraDB`) so it survives a refresh. Use **Clear workspace** before leaving a shared computer.
+*   Unlocking a password-protected PDF creates an unencrypted, image-based copy in the workspace. That copy remains until the workspace is cleared.
+*   PDFYantra is not a PWA and has no service worker; the app needs a network connection to load.
 
 ## 🚀 Tech Stack
 

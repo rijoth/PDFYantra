@@ -10,6 +10,7 @@ import { usePdfStore } from './store/usePdfStore';
 import { useGlobalErrorHandlers } from './hooks/useGlobalErrorHandlers';
 import { loadSession } from './services/storageService';
 import { AppStatus } from './types';
+import { PAGE_TITLE } from './constants/copy';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleNotch } from '@fortawesome/free-solid-svg-icons';
 
@@ -34,7 +35,7 @@ const App: React.FC = () => {
   // SEO: Update document title based on active tool
   useEffect(() => {
     const titles: Record<string, string> = {
-      home: 'PDFYantra - Privacy-First Local PDF Tools',
+      home: PAGE_TITLE,
       merge: 'Merge & Organize PDFs - PDFYantra',
       split: 'Split PDF Documents - PDFYantra',
       convert: 'Convert PDF to Images & Text - PDFYantra',

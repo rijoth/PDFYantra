@@ -3,6 +3,7 @@ import { usePdfStore } from '../store/usePdfStore';
 import { generateThumbnails, processFileWithPassword } from '../services/pdfService';
 import { ToolType, UploadedFile, PDFPage } from '../types';
 import { FILE_COLORS, getFileColor } from '../utils/colors';
+import { TAGLINE } from '../constants/copy';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleNotch, faFolderOpen, faLayerGroup, faPlus, faScissors } from '@fortawesome/free-solid-svg-icons';
 
@@ -91,7 +92,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                             <span className="font-bold text-primary">Workspace</span>
                         </h1>
                         <p className="text-lg text-secondary mb-8 max-w-md">
-                            Upload documents once. Organize, merge, and split them seamlessly in one flow-processed 100% locally in your browser.
+                            Upload documents once. Organize, merge, and split them seamlessly in one flow. {TAGLINE}
                         </p>
 
                         <button

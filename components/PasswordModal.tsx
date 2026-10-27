@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePdfStore } from '../store/usePdfStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleExclamation, faLock, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
+import { PASSWORD_NOTE } from '../constants/copy';
 
 const PasswordModal: React.FC = () => {
     const { passwordPrompt, resolvePasswordPrompt } = usePdfStore();
@@ -85,7 +86,7 @@ const PasswordModal: React.FC = () => {
                         <div className="flex items-start gap-3 p-3 bg-surfaceVariant/30 rounded-lg text-xs text-secondary mb-6">
                             <FontAwesomeIcon icon={faShieldHalved} className="mt-0.5 text-primary" />
                             <p>
-                                Passwords are used locally in your browser to unlock the document and are <b>never saved</b> or transmitted anywhere.
+                                {PASSWORD_NOTE}
                             </p>
                         </div>
 

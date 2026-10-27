@@ -3,6 +3,7 @@ import { usePdfStore } from '../store/usePdfStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faFilePdf } from '@fortawesome/free-regular-svg-icons';
 import { faMoon, faRotateLeft, faRotateRight, faShieldHalved, faSun, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { LOCAL_PROCESSING } from '../constants/copy';
 
 const TopAppBar: React.FC = () => {
   // Scoped selectors: primitives only re-render when these actually change,
@@ -156,7 +157,7 @@ const TopAppBar: React.FC = () => {
           />
         </button>
 
-        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-primaryContainer/30 rounded-pill border border-transparent hover:border-primaryContainer/50 transition-colors cursor-help" title="All processing happens in your browser">
+        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-primaryContainer/30 rounded-pill border border-transparent hover:border-primaryContainer/50 transition-colors cursor-help" title={LOCAL_PROCESSING}>
           <FontAwesomeIcon icon={faShieldHalved} className="text-primary text-sm" />
         </div>
       </div>

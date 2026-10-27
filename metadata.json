@@ -1,5 +1,5 @@
 {
   "name": "PDFYantra",
-  "description": "Privacy-first, client-side PDF manipulation tools.",
+  "description": "Private, client-side PDF tools. Files are processed in your browser and never uploaded.",
   "requestFramePermissions": []
 }

@@ -19,7 +19,7 @@ const CHUNK_ERROR_FRAGMENTS = [
 ];
 
 /**
- * Detects lazy-chunk load failures (offline or a stale chunk after a deploy).
+ * Detects lazy-chunk load failures (a network failure or a stale chunk after a deploy).
  * React reports these through the nearest error boundary.
  */
 export const isChunkLoadError = (error: Error): boolean => {
@@ -110,7 +110,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
 
             {chunkLoadFailed ? (
               <p className="mt-2 text-sm leading-relaxed text-onSurfaceVariant">
-                We could not load part of the app. You may be offline, or a newer version was
+                We could not load part of the app. Check your connection, or a newer version was
                 deployed. Reload the page to get the latest version.
               </p>
             ) : (
