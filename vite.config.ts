@@ -2,6 +2,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { securityHeaders } from './plugins/securityHeaders.ts';
+import { buildSecurityHeaders } from './config/csp.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +13,12 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
   },
-  plugins: [react()],
+  // `vite preview` serves the same header set as production. CSP is not applied
+  // to the dev server: HMR and the React refresh preamble need inline script.
+  preview: {
+    headers: buildSecurityHeaders(),
+  },
+  plugins: [react(), securityHeaders()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),

@@ -35,15 +35,9 @@
     <!-- Fonts and icons are bundled by Vite from npm packages (no third-party CDN requests). -->
 
     <!-- Tailwind is now built locally (PostCSS) — see tailwind.config.js.
-         Theme tokens live in /index.css; only the no-FOUC class-toggle runs inline. -->
-    <script>
-      // Initialize Theme based on system preference or saved selection
-      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    </script>
+         Theme tokens live in /index.css; the no-FOUC class-toggle is an external
+         script (/theme-init.js) because a strict script-src blocks inline code. -->
+    <script src="/theme-init.js"></script>
 
   <link rel="stylesheet" href="/index.css">
 </head>
