@@ -4,7 +4,10 @@ import DashboardLayout from './components/DashboardLayout';
 import LandingPage from './components/LandingPage';
 import ProcessingOverlay from './components/ProcessingOverlay';
 import PasswordModal from './components/PasswordModal';
+import ErrorBoundary from './components/ErrorBoundary';
+import ErrorFallback from './components/ErrorFallback';
 import { usePdfStore } from './store/usePdfStore';
+import { useGlobalErrorHandlers } from './hooks/useGlobalErrorHandlers';
 import { loadSession } from './services/storageService';
 import { AppStatus } from './types';
 
@@ -22,7 +25,9 @@ const ToolLoader = () => (
 );
 
 const App: React.FC = () => {
-  const { activeTool, setActiveTool, restoreSession, setInitialized, isInitialized, status } = usePdfStore();
+  const { activeTool, setActiveTool, restoreSession, setInitialized, isInitialized, status, setError } = usePdfStore();
+
+  useGlobalErrorHandlers(setError);
 
   // SEO: Update document title based on active tool
   useEffect(() => {
@@ -89,36 +94,43 @@ const App: React.FC = () => {
     );
   }
 
+  const renderTool = (content: React.ReactNode) => (
+    <Suspense fallback={<ToolLoader />}>
+      <ErrorBoundary
+        resetKeys={[activeTool]}
+        fallback={({ error, reset }) => (
+          <ErrorFallback
+            error={error}
+            reset={reset}
+            onGoHome={() => {
+              setActiveTool('home');
+              reset();
+            }}
+            variant="tool"
+          />
+        )}
+      >
+        {content}
+      </ErrorBoundary>
+    </Suspense>
+  );
+
   const renderContent = () => {
     switch (activeTool) {
       case 'home':
-        return <LandingPage onNavigate={setActiveTool} />;
+        return renderTool(<LandingPage onNavigate={setActiveTool} />);
       case 'merge':
-        return (
-          <Suspense fallback={<ToolLoader />}>
-            <OrganizerTool />
-          </Suspense>
-        );
+        return renderTool(<OrganizerTool />);
       case 'split':
-        return (
-          <Suspense fallback={<ToolLoader />}>
-            <SplitTool onSplit={() => { }} isProcessing={status === AppStatus.PROCESSING} />
-          </Suspense>
+        return renderTool(
+          <SplitTool onSplit={() => { }} isProcessing={status === AppStatus.PROCESSING} />
         );
       case 'convert':
-        return (
-          <Suspense fallback={<ToolLoader />}>
-            <ConvertTool />
-          </Suspense>
-        );
+        return renderTool(<ConvertTool />);
       case 'compress':
-        return (
-          <Suspense fallback={<ToolLoader />}>
-            <CompressTool />
-          </Suspense>
-        );
+        return renderTool(<CompressTool />);
       default:
-        return <LandingPage onNavigate={setActiveTool} />;
+        return renderTool(<LandingPage onNavigate={setActiveTool} />);
     }
   };
 
