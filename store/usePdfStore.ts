@@ -2,7 +2,8 @@
 
 import { create } from 'zustand';
 import { AppStatus, PDFPage, ProcessingResult, ToolType, UploadedFile, SearchResult, HistoryEntry } from '../types';
-import { clearSession, saveSession } from '../services/storageService';
+import { clearSession } from '../services/storageService';
+import { createDebouncedSaver } from '../services/sessionSaver';
 import { generateThumbnails, regenerateThumbnailsForFile } from '../services/pdfService';
 import { searchWorkspace, clearSearchCache, evictFileFromSearchCache } from '../services/searchService';
 import { evictDoc, clearDocCache } from '../services/pdfCache';
@@ -52,7 +53,7 @@ interface PdfState {
   removePage: (pageId: string) => void;
   setPages: (pages: PDFPage[]) => void; // For reordering
   sortPagesByFileOrder: (orderedFileIds: string[]) => void;
-  clearWorkspace: () => void;
+  clearWorkspace: () => Promise<void>;
 
   // Selection
   toggleSelectPage: (pageId: string, isMulti: boolean) => void;
@@ -100,6 +101,9 @@ interface PdfState {
   promptForPassword: (filename: string, isRetry: boolean) => Promise<string | null>;
   resolvePasswordPrompt: (password: string | null) => void;
 }
+
+// Automatic sync with IndexedDB
+const sessionSaver = createDebouncedSaver();
 
 export const usePdfStore = create<PdfState>((set, get) => ({
   // Initial State
@@ -451,11 +455,15 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       }
     });
 
-    // Also clear the persistent storage and in-memory caches
-    clearSession();
+    // Drop the debounced save synchronously, *before* resetting the store: the
+    // reset itself trips the persistence subscriber, and a snapshot captured
+    // before the clear must never be written afterwards.
+    sessionSaver.cancel();
+
     clearSearchCache();
     clearDocCache();
 
+    // The UI reset stays synchronous so the workspace disappears instantly.
     set({
       files: new Map(),
       pages: [],
@@ -467,6 +475,18 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       previewUrl: null,
       searchQuery: '',
       searchResults: []
+    });
+
+    // The durable part is awaited by the caller.
+    // Ordering guarantee: once this promise resolves, IndexedDB holds no files
+    // and an empty (or absent) session, and any save scheduled before the clear
+    // has been dropped (the debounced snapshot by `cancel()`, an in-flight save
+    // by the storage epoch guard). Saving the empty post-clear state afterwards
+    // is fine - it goes through the same storage queue, so it is ordered after
+    // the clear.
+    return clearSession().catch((err) => {
+      console.error('Failed to clear the saved workspace:', err);
+      set({ errorMessage: 'Could not clear the saved workspace. Please try again.' });
     });
   },
 
@@ -622,9 +642,6 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   },
 }));
 
-// Automatic sync with IndexedDB
-let saveTimer: ReturnType<typeof setTimeout> | null = null;
-
 usePdfStore.subscribe(
   (state, prevState) => {
     // Only save if files, pages, or activeTool changed
@@ -635,10 +652,7 @@ usePdfStore.subscribe(
     ) {
       if (!state.isInitialized) return;
 
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        saveSession(state.files, state.pages, state.activeTool);
-      }, 400);
+      sessionSaver.schedule(state.files, state.pages, state.activeTool);
     }
   }
 );

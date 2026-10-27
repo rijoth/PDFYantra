@@ -128,7 +128,7 @@ const TopAppBar: React.FC = () => {
               {pageCount} {pageCount === 1 ? 'Page' : 'Pages'}
             </span>
             <button
-              onClick={clearWorkspace}
+              onClick={() => { void clearWorkspace(); }}
               className="ml-2 w-5 h-5 rounded-full hover:bg-error/10 hover:text-red-600 flex items-center justify-center transition-colors"
               title="Clear Workspace"
               aria-label="Clear Workspace"

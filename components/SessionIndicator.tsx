@@ -23,7 +23,9 @@ const SessionIndicator: React.FC = () => {
 
     const handleClear = () => {
         if (window.confirm('Are you sure you want to clear your session? This will remove all currently loaded files.')) {
-            clearWorkspace();
+            // The UI resets synchronously; the storage wipe is fire-and-forget here
+            // because the store surfaces any failure through `errorMessage`.
+            void clearWorkspace();
             dismissRecoveryIndication();
         }
     };
