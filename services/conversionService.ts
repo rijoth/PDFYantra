@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import { UploadedFile, PDFPage, ConvertFormat } from '../types';
 import { pdfjs } from './pdfjsSetup';
 import { getFileBuffer } from './pdfCache';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 /**
  * Helper to create a hidden container for DOM rendering
@@ -24,50 +25,6 @@ const createHiddenContainer = () => {
   div.style.color = '#000';
   document.body.appendChild(div);
   return div;
-};
-
-/**
- * Sanitizes untrusted HTML before injecting it into the app's DOM.
- *
- * html2canvas does not execute <script>, but inline event handlers (onclick,
- * onerror, ...), javascript: URIs, and active elements (<iframe>, <embed>,
- * <object>, <form>) still run in this app's origin. This neutralizes those
- * vectors by parsing to a DOM, stripping disallowed elements/attributes, and
- * re-serializing. It is a pragmatic defense-in-depth layer; for full coverage
- * prefer DOMPurify, which is not currently a dependency.
- */
-const sanitizeHtml = (html: string): string => {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-
-  // Remove disallowed active elements entirely.
-  const stripTags = ['script', 'iframe', 'object', 'embed', 'form', 'link', 'meta', 'base'];
-  stripTags.forEach(tag => {
-    doc.querySelectorAll(tag).forEach(el => el.remove());
-  });
-
-  // Strip inline event handlers and dangerous attributes.
-  doc.querySelectorAll('*').forEach(el => {
-    Array.from(el.attributes).forEach(attr => {
-      const name = attr.name.toLowerCase();
-      const value = attr.value.trim().toLowerCase();
-      if (name.startsWith('on')) {
-        el.removeAttribute(attr.name);
-      } else if ((name === 'href' || name === 'src' || name === 'xlink:href') &&
-        (value.startsWith('javascript:') || value.startsWith('data:text/html'))) {
-        el.removeAttribute(attr.name);
-      }
-    });
-  });
-
-  // Drop style values that pull in scripts/active content via CSS.
-  doc.querySelectorAll('[style]').forEach(el => {
-    const style = el.getAttribute('style') || '';
-    if (/expression\(|javascript:|url\s*\(\s*['"]?javascript:/i.test(style)) {
-      el.setAttribute('style', style.replace(/expression\(|javascript:|url\s*\(\s*['"]?javascript:/gi, ''));
-    }
-  });
-
-  return doc.body ? doc.body.innerHTML : '';
 };
 
 /**
@@ -187,7 +144,16 @@ const convertTextToPdf = async (file: File) => {
 
 // Uses DOM snapshot approach (Canvas)
 const renderDomToPdf = async (element: HTMLElement, originalName: string) => {
-  const canvas = await html2canvas(element, { scale: 2 }); // 2x scale for better quality
+  const canvas = await html2canvas(element, {
+    scale: 2, // 2x scale for better quality
+    // Privacy: never fetch remote resources and never taint the canvas.
+    useCORS: false,
+    allowTaint: false,
+    foreignObjectRendering: false,
+    // Bounded so a stuck resource cannot hang the conversion. No proxy:
+    // nothing about the document ever leaves the browser.
+    imageTimeout: 15000,
+  });
   const imgData = canvas.toDataURL('image/jpeg', 0.8);
   
   const pdfDoc = await PDFDocument.create();
@@ -244,7 +210,7 @@ const convertDocxToPdf = async (file: File) => {
   
   // Add some basic styles for mammoth output
   const style = document.createElement('style');
-  style.innerHTML = `
+  style.textContent = `
     .mammoth-output { line-height: 1.5; }
     .mammoth-output p { margin-bottom: 1em; }
     .mammoth-output table { border-collapse: collapse; width: 100%; }
@@ -267,7 +233,9 @@ const convertXlsxToPdf = async (file: File) => {
   const html = XLSX.utils.sheet_to_html(workbook.Sheets[sheetName]);
 
   const container = createHiddenContainer();
-  container.innerHTML = html;
+  // Sheet cells are user-controlled and sheet_to_html also emits a document
+  // wrapper (<head>/<meta>); sanitize before it touches this origin's DOM.
+  container.innerHTML = sanitizeHtml(html);
   
   try {
     const res = await renderDomToPdf(container, file.name);
